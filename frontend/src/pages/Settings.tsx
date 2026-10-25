@@ -1,15 +1,190 @@
-import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { Aperture, Check, CircleHelp, Loader2, ShieldCheck, SlidersHorizontal } from 'lucide-react'
-import type { Library, ModelStatus, Weights } from '../types'
-import { Button } from '../components/ui/button'
-import { api } from '../services/api'
-export function Settings({ library, model, onError, refresh }: { library?: Library; model?: ModelStatus; onError: (s: string) => void; refresh: () => void }) {
-  return <><div className="page-heading"><div><div className="eyebrow">A WORKSPACE THAT WORKS YOUR WAY</div><h1>Settings.</h1><p>Transparent measurements. Local models. Your priorities.</p></div></div><div className="settings-layout"><section className="settings-section"><div className="settings-title"><Aperture size={20}/><h2>Aesthetic model</h2><span className={`model-pill ${model?.status === 'ready' ? 'sage' : ''}`}>{model?.status === 'ready' ? <Check size={12}/> : <CircleHelp size={12}/>} {model?.status.replaceAll('_',' ') ?? 'Checking…'}</span></div><p>OpenAI CLIP ViT-B/32 + LAION aesthetic predictor V1. A 512-dimensional, L2-normalised embedding with the matching linear predictor. CPU inference; no cloud calls.</p>{model?.error && <p className="error">{model.error}</p>}<dl className="model-details"><div><dt>Model directory</dt><dd>{model?.directory ?? 'Loading…'}</dd></div><div><dt>Optional AI dependencies</dt><dd>{model?.dependencies ? 'Installed' : 'Not installed · install the ai extra'}</dd></div><div><dt>Inference device</dt><dd>CPU · no CUDA required</dd></div></dl><div className="install-instructions"><strong>Install once, with your approval</strong><code>cd backend<br/>uv sync --extra ai --extra raw --extra dev<br/>.\.venv\Scripts\python.exe ..\scripts\install_models.py --approve-download</code><p className="footnote">Downloads weights only when you run this explicit consent command. Afterwards, resume a scan to fill missing aesthetic scores. Runtime loading uses local paths only.</p></div></section>{library ? <WeightSettings key={library.id} library={library} onError={onError} refresh={refresh}/> : <section className="settings-section"><h2>Ranking weights</h2><p>Create a collection to configure its ranking weights.</p></section>}<section className="settings-section"><div className="settings-title"><ShieldCheck size={20}/><h2>Storage & privacy</h2></div><p>SQLite, model manifests and per-collection previews live in your Windows application-data folder. Your source folder is read-only to Framewise. No telemetry, uploads or external inference services.</p><p className="footnote">Two preview workers · batches of eight · 48 thumbnails per gallery page. Preview cache removal is manual while the app is closed; resuming regenerates missing previews. Never remove the SQLite database if you want to retain your decisions.</p></section></div></>
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import {
+  Aperture,
+  Check,
+  CircleHelp,
+  Loader2,
+  ShieldCheck,
+  SlidersHorizontal,
+} from "lucide-react";
+import type { Library, ModelStatus, Weights } from "../types";
+import { Button } from "../components/ui/button";
+import { api } from "../services/api";
+export function Settings({
+  library,
+  model,
+  onError,
+  refresh,
+}: {
+  library?: Library;
+  model?: ModelStatus;
+  onError: (s: string) => void;
+  refresh: () => void;
+}) {
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">A WORKSPACE THAT WORKS YOUR WAY</div>
+          <h1>Settings.</h1>
+          <p>Transparent measurements. Local models. Your priorities.</p>
+        </div>
+      </div>
+      <div className="settings-layout">
+        <section className="settings-section">
+          <div className="settings-title">
+            <Aperture size={20} />
+            <h2>Aesthetic model</h2>
+            <span
+              className={`model-pill ${model?.status === "ready" ? "sage" : ""}`}
+            >
+              {model?.status === "ready" ? (
+                <Check size={12} />
+              ) : (
+                <CircleHelp size={12} />
+              )}{" "}
+              {model?.status.replaceAll("_", " ") ?? "Checking…"}
+            </span>
+          </div>
+          <p>
+            OpenAI CLIP ViT-B/32 + LAION aesthetic predictor V1. A
+            512-dimensional, L2-normalised embedding with the matching linear
+            predictor. CPU inference; no cloud calls.
+          </p>
+          {model?.error && <p className="error">{model.error}</p>}
+          <dl className="model-details">
+            <div>
+              <dt>Model directory</dt>
+              <dd>{model?.directory ?? "Loading…"}</dd>
+            </div>
+            <div>
+              <dt>Optional AI dependencies</dt>
+              <dd>
+                {model?.dependencies
+                  ? "Installed"
+                  : "Not installed · install the ai extra"}
+              </dd>
+            </div>
+            <div>
+              <dt>Inference device</dt>
+              <dd>CPU · no CUDA required</dd>
+            </div>
+          </dl>
+          <div className="install-instructions">
+            <strong>Install once, with your approval</strong>
+            <code>
+              cd backend
+              <br />
+              uv sync --extra ai --extra raw --extra dev
+              <br />
+              .\.venv\Scripts\python.exe ..\scripts\install_models.py
+              --approve-download
+            </code>
+            <p className="footnote">
+              Downloads weights only when you run this explicit consent command.
+              Afterwards, resume a scan to fill missing aesthetic scores.
+              Runtime loading uses local paths only.
+            </p>
+          </div>
+        </section>
+        {library ? (
+          <WeightSettings
+            key={library.id}
+            library={library}
+            onError={onError}
+            refresh={refresh}
+          />
+        ) : (
+          <section className="settings-section">
+            <h2>Ranking weights</h2>
+            <p>Create a collection to configure its ranking weights.</p>
+          </section>
+        )}
+        <section className="settings-section">
+          <div className="settings-title">
+            <ShieldCheck size={20} />
+            <h2>Storage & privacy</h2>
+          </div>
+          <p>
+            SQLite, model manifests and per-collection previews live in your
+            Windows application-data folder. Your source folder is read-only to
+            Framewise. No telemetry, uploads or external inference services.
+          </p>
+          <p className="footnote">
+            Two preview workers · batches of eight · 48 thumbnails per gallery
+            page. Preview cache removal is manual while the app is closed;
+            resuming regenerates missing previews. Never remove the SQLite
+            database if you want to retain your decisions.
+          </p>
+        </section>
+      </div>
+    </>
+  );
 }
 
-function WeightSettings({ library, onError, refresh }: { library: Library; onError: (s: string) => void; refresh: () => void }) {
-  const [weights, setWeights] = useState<Weights>(library.config.weights)
-  const update = useMutation({ mutationFn: () => api(`/libraries/${library.id}/weights`, 'PATCH', weights), onSuccess: refresh, onError: e => onError(e.message) })
-  return <section className="settings-section"><div className="settings-title"><SlidersHorizontal size={20}/><h2>Ranking priorities</h2></div><p>Applies to {library.name}. Weights are normalised across available measurements. These starting heuristics are not validated predictions of artistic success.</p>{(['aesthetic','sharpness','exposure'] as const).map(key => <label className="weight-control" key={key}><span>{key === 'aesthetic' ? 'Aesthetic assessment' : key === 'sharpness' ? 'Sharpness / detail' : 'Exposure / tonality'}</span><input type="range" min="0" max="1" step="0.05" value={weights[key]} onChange={e => setWeights({ ...weights, [key]: Number(e.target.value) })}/><b>{Math.round(weights[key]*100)}</b></label>)}<Button variant="outline" disabled={update.isPending || weights.sharpness + weights.exposure === 0} onClick={() => update.mutate()}>{update.isPending && <Loader2 size={14} className="animate-spin"/>}Save & rerank</Button><p className="footnote">No image reprocessing required. Manual decisions remain protected. Night scenes and intentional blur deserve your own review.</p></section>
+function WeightSettings({
+  library,
+  onError,
+  refresh,
+}: {
+  library: Library;
+  onError: (s: string) => void;
+  refresh: () => void;
+}) {
+  const [weights, setWeights] = useState<Weights>(library.config.weights);
+  const update = useMutation({
+    mutationFn: () => api(`/libraries/${library.id}/weights`, "PATCH", weights),
+    onSuccess: refresh,
+    onError: (e) => onError(e.message),
+  });
+  return (
+    <section className="settings-section">
+      <div className="settings-title">
+        <SlidersHorizontal size={20} />
+        <h2>Ranking priorities</h2>
+      </div>
+      <p>
+        Applies to {library.name}. Weights are normalised across available
+        measurements. These starting heuristics are not validated predictions of
+        artistic success.
+      </p>
+      {(["aesthetic", "sharpness", "exposure"] as const).map((key) => (
+        <label className="weight-control" key={key}>
+          <span>
+            {key === "aesthetic"
+              ? "Aesthetic assessment"
+              : key === "sharpness"
+                ? "Sharpness / detail"
+                : "Exposure / tonality"}
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={weights[key]}
+            onChange={(e) =>
+              setWeights({ ...weights, [key]: Number(e.target.value) })
+            }
+          />
+          <b>{Math.round(weights[key] * 100)}</b>
+        </label>
+      ))}
+      <Button
+        variant="outline"
+        disabled={
+          update.isPending || weights.sharpness + weights.exposure === 0
+        }
+        onClick={() => update.mutate()}
+      >
+        {update.isPending && <Loader2 size={14} className="animate-spin" />}Save
+        & rerank
+      </Button>
+      <p className="footnote">
+        No image reprocessing required. Manual decisions remain protected. Night
+        scenes and intentional blur deserve your own review.
+      </p>
+    </section>
+  );
 }

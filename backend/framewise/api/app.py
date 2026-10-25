@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import and_, case, func, or_
+from sqlalchemy.dialects.sqlite import insert
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from framewise.api.schemas import BudgetUpdate, DecisionUpdate, LibraryCreate, WeightUpdate
@@ -148,9 +149,16 @@ def library_info(db, lib):
     )
     latest = db.query(ScanJob).filter_by(library_id=lib.id).order_by(ScanJob.created.desc()).first()
     selected = photo_query(db, lib.id).filter(selected_expression()).count()
-    averages = photo_query(db, lib.id).filter(selected_expression()).with_entities(
-        func.avg(PhotoMetrics.aesthetic), func.avg(PhotoMetrics.calibrated["sharpness"].as_float()),
-        func.avg(PhotoMetrics.calibrated["exposure"].as_float())).one()
+    averages = (
+        photo_query(db, lib.id)
+        .filter(selected_expression())
+        .with_entities(
+            func.avg(PhotoMetrics.aesthetic),
+            func.avg(PhotoMetrics.calibrated["sharpness"].as_float()),
+            func.avg(PhotoMetrics.calibrated["exposure"].as_float()),
+        )
+        .one()
+    )
     cover = db.query(Photo).filter_by(library_id=lib.id, status="ready").order_by(Photo.score.desc()).first()
     return {
         "id": lib.id,
@@ -170,7 +178,11 @@ def library_info(db, lib):
 
 
 def job_info(job):
-    return {"id": job.id, "library_id": job.library_id, "status": job.status, **job.progress}
+    progress = dict(job.progress)
+    if "elapsed" in progress:
+        progress["speed"] = round((progress.get("processed", 0) - progress.get("reused", 0)) /
+                                  max(progress["elapsed"], 0.1), 2)
+    return {"id": job.id, "library_id": job.library_id, "status": job.status, **progress}
 
 
 @app.get("/api/health")
@@ -295,9 +307,13 @@ def photos(
                     Photo.recommendation == "review",
                 ),
             ),
-            "low": or_(PhotoDecision.decision == "reject", and_(
-                or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
-                Photo.recommendation == "low")),
+            "low": or_(
+                PhotoDecision.decision == "reject",
+                and_(
+                    or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
+                    Photo.recommendation == "low",
+                ),
+            ),
             "similar": Photo.group_id.is_not(None),
             "failed": Photo.status != "ready",
         }
@@ -356,14 +372,10 @@ def image(photo_id: str, kind: str):
 def decision(photo_id: str, body: DecisionUpdate):
     with Session.begin() as db:
         required(db, Photo, photo_id)
-        item = db.get(PhotoDecision, photo_id)
-        if item is None:
-            item = PhotoDecision(photo_id=photo_id)
-            db.add(item)
-        if body.decision is not None:
-            item.decision = body.decision
-        if body.stars is not None:
-            item.stars = body.stars
+        changes = body.model_dump(exclude_none=True)
+        if changes:
+            statement = insert(PhotoDecision).values(photo_id=photo_id, **changes)
+            db.execute(statement.on_conflict_do_update(index_elements=["photo_id"], set_=changes))
     return photo_detail(photo_id)
 
 

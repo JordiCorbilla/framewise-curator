@@ -20,6 +20,10 @@ def fresh_database(monkeypatch):
     Base.metadata.create_all(engine)
     monkeypatch.setattr(analyzer, "status", lambda: {"status": "download_required"})
     monkeypatch.setattr(analyzer, "model_id", lambda: "classical-only-v1")
+    yield
+    from framewise.imaging.exiftool import close_all
+
+    close_all()
 
 
 @pytest.fixture

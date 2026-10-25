@@ -1,12 +1,12 @@
 import hashlib
 import io
 import json
-import subprocess
 from pathlib import Path
 
 from PIL import ExifTags, Image, ImageOps
 
 from framewise.core.config import CACHE, VERSION, exiftool_path
+from framewise.imaging.exiftool import execute
 
 SUPPORTED = {".nef", ".jpg", ".jpeg", ".png"}
 
@@ -37,9 +37,8 @@ def identity(path, model_id):
 def read_metadata(path):
     tool = exiftool_path()
     if tool:
-        result = subprocess.run(
+        result = run_tool(
             [
-                tool,
                 "-json",
                 "-n",
                 "-charset",
@@ -56,15 +55,14 @@ def read_metadata(path):
                 "-ExposureCompensation",
                 "-ImageWidth",
                 "-ImageHeight",
-                "-@",
-                "-",
             ],
-            input=argument_path(path),
-            capture_output=True,
+            path,
             timeout=40,
-            check=True,
         )
-        return json.loads(result.stdout.decode("utf-8"))[0]
+        metadata = json.loads(result.decode("utf-8"))[0]
+        if metadata.get("Error"):
+            raise ValueError(f"Unreadable image metadata: {metadata['Error']}")
+        return metadata
     if path.suffix.lower() == ".nef":
         return {}
     with Image.open(path) as im:
@@ -103,15 +101,10 @@ def decode(path, metadata):
     candidates = []
     if tool:
         for tag in ("JpgFromRaw", "PreviewImage", "OtherImage"):
-            result = subprocess.run(
-                [tool, "-charset", "filename=UTF8", "-b", f"-{tag}", "-@", "-"],
-                input=argument_path(path),
-                capture_output=True,
-                timeout=60,
-            )
-            if result.returncode == 0 and result.stdout:
+            result = run_tool(["-b", f"-{tag}"], path, timeout=60)
+            if result:
                 try:
-                    with Image.open(io.BytesIO(result.stdout)) as im:
+                    with Image.open(io.BytesIO(result)) as im:
                         im.load()
                         candidates.append((im.width * im.height, im.copy(), tag))
                 except (OSError, ValueError):
@@ -153,9 +146,9 @@ def acquire(path, library_id, photo_id):
     return image, metadata, provenance, width, height
 
 
-def argument_path(path):
-    # UTF-8 argument files bypass the Windows Perl ANSI command-line conversion.
+def run_tool(arguments, path, timeout=60):
+    # UTF-8 argument streams bypass the Windows Perl ANSI command-line conversion.
     value = str(path.resolve())
     if "\n" in value or "\r" in value:
         raise ValueError("Unsupported newline in filename")
-    return (value + "\n").encode("utf-8")
+    return execute(exiftool_path(), [*arguments, value], timeout)

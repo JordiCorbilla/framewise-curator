@@ -7,6 +7,7 @@ from pathlib import Path
 from framewise.curation.ranking import recommend
 from framewise.db.models import Library, ModelRun, Photo, PhotoMetadata, PhotoMetrics, ScanJob, Session
 from framewise.imaging.acquisition import acquire, cache_paths, discover, identity, source_path
+from framewise.imaging.exiftool import close_all
 from framewise.scoring.aesthetic import analyzer
 from framewise.scoring.metrics import classical
 
@@ -62,12 +63,13 @@ class ScanManager:
             elapsed = time.monotonic() - started
             progress.update(
                 elapsed=round(elapsed, 1),
-                speed=round(progress["processed"] / max(elapsed, 0.1), 2),
+                speed=round((progress["processed"] - progress["reused"]) / max(elapsed, 0.1), 2),
                 percent=round(100 * progress["processed"] / max(progress["total"], 1), 1),
             )
             with Session.begin() as db:
                 job = db.get(ScanJob, job_id)
-                job.status, job.progress = status, dict(progress)
+                job.status = "cancelling" if status == "running" and stop.is_set() else status
+                job.progress = dict(progress)
 
         try:
             update()
@@ -111,6 +113,13 @@ class ScanManager:
                         progress["scored"] += int(metrics is not None and metrics.aesthetic is not None)
                     else:
                         photo.status = "pending"
+                        photo.score = None
+                        photo.phash = None
+                        photo.group_id, photo.group_rank = None, None
+                        photo.recommendation = "unprocessed"
+                        photo.selection_rank = None
+                        db.query(PhotoMetrics).filter_by(photo_id=photo_id).delete()
+                        db.query(PhotoMetadata).filter_by(photo_id=photo_id).delete()
                         work.append((photo_id, fingerprint, relative))
                 progress["indexed"] = len(files)
             progress["stage"] = "previews & analysis"
@@ -132,6 +141,9 @@ class ScanManager:
                 for offset in range(0, len(work), 8):
                     if stop.is_set():
                         break
+                    progress["current"] = Path(work[offset][2]).name
+                    progress["stage"] = "previews & analysis"
+                    update()
                     batch = list(pool.map(process, work[offset : offset + 8]))
                     good = [result for result in batch if result[1] is not None]
                     progress["stage"] = (
@@ -187,6 +199,7 @@ class ScanManager:
             progress.update(stage="failed", error=f"{type(exc).__name__}: {exc}")
             update("failed")
         finally:
+            close_all()
             self.cancel_events.pop(job_id, None)
 
 

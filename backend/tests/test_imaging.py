@@ -25,9 +25,7 @@ def test_path_escape_rejected(source):
 def test_exiftool_metadata(monkeypatch, tmp_path):
     monkeypatch.setattr(acq, "exiftool_path", lambda: "exiftool")
     data = {"Orientation": 6, "DateTimeOriginal": "2026:10:18 11:12:13", "Model": "NIKON"}
-    monkeypatch.setattr(
-        acq.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=json.dumps([data]).encode())
-    )
+    monkeypatch.setattr(acq, "run_tool", lambda *a, **k: json.dumps([data]).encode())
     assert acq.read_metadata(tmp_path / "camera.nef") == data
 
 
@@ -53,15 +51,15 @@ def test_orientation(image, orientation, size):
 def test_embedded_preview_largest_and_fallback(monkeypatch, tmp_path, image):
     monkeypatch.setattr(acq, "exiftool_path", lambda: "exiftool")
 
-    def result(args, **kwargs):
+    def result(args, *positional, **kwargs):
         buffer = io.BytesIO()
         if "-JpgFromRaw" in args:
-            return SimpleNamespace(returncode=0, stdout=b"")
+            return b""
         candidate = image if "-PreviewImage" in args else image.resize((60, 40))
         candidate.save(buffer, "JPEG")
-        return SimpleNamespace(returncode=0, stdout=buffer.getvalue())
+        return buffer.getvalue()
 
-    monkeypatch.setattr(acq.subprocess, "run", result)
+    monkeypatch.setattr(acq, "run_tool", result)
     decoded, provenance = acq.decode(tmp_path / "test.nef", {"Orientation": 6})
     assert decoded.size == (240, 360)
     assert "PreviewImage" in provenance
