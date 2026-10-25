@@ -8,6 +8,9 @@ The layers are deliberately independent:
 
 - `imaging/acquisition.py`: extension discovery, validated source resolution, read-only ExifTool EXIF
   and embedded JPEG extraction, orientation, optional LibRaw fallback, previews and thumbnails.
+- `imaging/exiftool.py`: one persistent, binary-safe stay-open session per preview thread, UTF-8 argument
+  streams for Windows Unicode paths, bounded output queues and per-command deadlines. Processes close
+  at scan completion/cancellation.
 - `scoring/metrics.py`: deterministic raw and calibrated technical measurements.
 - `scoring/aesthetic.py`: `PhotoAnalyzer` contract, optional batched offline-only PyTorch inference.
 - `curation/ranking.py`: separate aggregation, conservative similarity groups and budget decisions.
@@ -28,6 +31,8 @@ includes resolved path, size, nanosecond mtime, processing version and exact mod
 Ranking weights do not invalidate measured features; weight changes rerank immediately. Preview-cache
 loss triggers regeneration. A cancelled/interrupted scan reindexes but reuses valid measured results.
 Failed files retry on resume. Reopening a library only reads SQLite and cached previews.
+Changed-source failures clear stale measurements. Missing source files retain manual decisions but are
+excluded from selection until available again. Throughput excludes cached results reused on resume.
 
 Maximum resident acquisition work is two decoders and eight display-sized images per batch. Full RAW
 development is only a fallback. Models load once in the single inference worker; CPU threads are

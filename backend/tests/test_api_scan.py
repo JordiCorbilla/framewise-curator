@@ -142,3 +142,24 @@ def test_startup_marks_interrupted_jobs():
     initialize()
     with Session() as db:
         assert db.get(ScanJob, job_id).status == "interrupted"
+
+
+def test_changed_and_missing_sources_retain_decisions_without_stale_scores(client, source):
+    lib_id, _ = create_scanned(source)
+    before = client.get(f"/api/libraries/{lib_id}/photos").json()["items"]
+    changed = before[0]
+    client.patch(f"/api/photos/{changed['id']}/decision", json={"decision": "keep", "stars": 4})
+    from pathlib import Path
+
+    Path(changed["original_path"]).write_bytes(b"now corrupt")
+    Path(before[1]["original_path"]).unlink()
+    with Session.begin() as db:
+        job = ScanJob(library_id=lib_id)
+        db.add(job)
+        db.flush()
+        job_id = job.id
+    ScanManager().run(job_id, threading.Event())
+    after = client.get(f"/api/photos/{changed['id']}").json()
+    assert after["status"] == "failed" and after["score"] is None and after["aesthetic"] is None
+    assert after["decision"] == "keep" and after["stars"] == 4 and not after["selected"]
+    assert client.get(f"/api/photos/{before[1]['id']}").json()["status"] == "missing"

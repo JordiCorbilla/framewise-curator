@@ -3,8 +3,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location "$projectRoot\backend"
 try {
-    if ($WithAI -or $DownloadModels) { uv sync --python 3.11 --extra dev --extra raw --extra ai }
-    else { uv sync --python 3.11 --extra dev --extra raw }
+    if ($WithAI -or $DownloadModels) { uv sync --frozen --python 3.11 --extra dev --extra raw --extra ai }
+    else { uv sync --frozen --python 3.11 --extra dev --extra raw }
     if ($LASTEXITCODE) { throw 'Python dependency installation failed' }
     if ($DownloadModels) {
         # The switch is explicit user consent to this one-time download.

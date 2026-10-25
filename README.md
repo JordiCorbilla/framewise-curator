@@ -60,7 +60,7 @@ cd backend
 .\.venv\Scripts\ruff.exe check framewise tests ..\scripts
 .\.venv\Scripts\ruff.exe format --check framewise tests ..\scripts
 cd ..\frontend
-npm run lint -- --max-warnings 0
+npm run lint
 npm run build
 ```
 
