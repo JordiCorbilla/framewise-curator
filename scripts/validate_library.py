@@ -27,16 +27,28 @@ def main():
     assert library["job"]["status"] == "complete"
     photos = []
     for page in range(1, (args.expected + 99) // 100 + 1):
-        photos.extend(json.loads(get(f"/libraries/{args.library_id}/photos?limit=100&page={page}"))["items"])
+        photos.extend(
+            json.loads(
+                get(f"/libraries/{args.library_id}/photos?limit=100&page={page}")
+            )["items"]
+        )
     assert len(photos) == args.expected
     assert all(
-        p["aesthetic"] is not None and p["provenance"] and Path(p["original_path"]).is_file() for p in photos
+        p["aesthetic"] is not None
+        and p["provenance"]
+        and Path(p["original_path"]).is_file()
+        for p in photos
     )
     assert len({p["id"] for p in photos}) == args.expected
-    assert all(p["thumbnail"] and get(p["thumbnail"][4:])[:2] == b"\xff\xd8" for p in photos[:3])
+    assert all(
+        p["thumbnail"] and get(p["thumbnail"][4:])[:2] == b"\xff\xd8"
+        for p in photos[:3]
+    )
     output = args.output.resolve()
     source = Path(library["source"]).resolve()
-    assert output != source and source not in output.parents, "Output must be outside the source folder"
+    assert output != source and source not in output.parents, (
+        "Output must be outside the source folder"
+    )
     output.mkdir(parents=True, exist_ok=True)
     for filename, expected in [
         ("all_photos.csv", args.expected),
@@ -59,13 +71,17 @@ def main():
         "failed": library["failed"],
         "ai_scored": sum(p["aesthetic"] is not None for p in photos),
         "similarity_groups": len({p["group_id"] for p in photos if p["group_id"]}),
-        "protected_groups": len({p["group_id"] for p in photos if p["group_protected"]}),
+        "protected_groups": len(
+            {p["group_id"] for p in photos if p["group_protected"]}
+        ),
         "provenance": sorted({p["provenance"] for p in photos}),
         "gallery_request_median_ms": round(statistics.median(timings), 2),
         "gallery_request_max_ms": round(max(timings), 2),
         "job": library["job"],
     }
-    (output / "validation.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    (output / "validation.json").write_text(
+        json.dumps(result, indent=2), encoding="utf-8"
+    )
     print(json.dumps(result, indent=2))
 
 

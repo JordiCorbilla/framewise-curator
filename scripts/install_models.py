@@ -58,7 +58,9 @@ def main():
         "installed": datetime.now(UTC).isoformat(),
         "consent": "--approve-download",
     }
-    (MODELS / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (MODELS / "manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
     print(f"Installed. Provenance: {MODELS / 'manifest.json'}")
 
 

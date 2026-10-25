@@ -42,7 +42,9 @@ def main():
     assert abs(single - batch[0]) < 1e-4
     reference = load_openai_model(str(MODELS / "clip.pt"), device="cpu")
     reference.eval()
-    transform = image_transform(224, is_train=False, mean=OPENAI_DATASET_MEAN, std=OPENAI_DATASET_STD)
+    transform = image_transform(
+        224, is_train=False, mean=OPENAI_DATASET_MEAN, std=OPENAI_DATASET_STD
+    )
     with torch.inference_mode():
         embeddings = reference.encode_image(transform(image).unsqueeze(0)).float()
         embeddings /= embeddings.norm(dim=-1, keepdim=True)

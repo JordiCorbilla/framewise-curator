@@ -187,6 +187,7 @@ def rank(frames, config=None):
             "group_rank": 1,
             "suppressed_by": None,
             "diversity_adjustment": 0.0,
+            "forced_inclusion": False,
             "model_version": f.model_id,
             "embedding_provenance": f.data.get("embedding_provenance"),
             "ranking_version": VERSION,
@@ -290,6 +291,9 @@ def rank(frames, config=None):
         output[f.id]["competition_rank"] = slot
         if not output[f.id]["viable"] or output[f.id]["suppressed_by"]:
             output[f.id]["uncertainties"].append("Included by explicit manual/Exactly three override.")
+            if cfg["force_three"] and f.competition == "auto" and not f.manual_rank:
+                output[f.id]["forced_inclusion"] = True
+                output[f.id]["competition_origin"] = "forced"
         if f.group:
             output[f.id]["strengths"].append(
                 f"Highlights rank {output[f.id]['group_rank']} within its similarity group."

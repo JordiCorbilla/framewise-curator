@@ -36,6 +36,7 @@ FIELDS = [
     "analysis_provenance",
     "raw_mapping",
     "embedding_provenance",
+    "exactly_three_override",
 ]
 
 
@@ -97,6 +98,7 @@ def make_csv(photos, category=None):
                             else "original raster; no verified RAW association"
                         ),
                         highlight.get("embedding_provenance"),
+                        highlight.get("forced_inclusion", False),
                     ],
                     strict=True,
                 )

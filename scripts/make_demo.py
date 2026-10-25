@@ -25,7 +25,9 @@ def main():
         draw.ellipse((840, 75, 940, 175), fill="#ded5b8")
         if index % 2:
             image = image.filter(ImageFilter.GaussianBlur(1.5))
-        ImageDraw.Draw(image).text((30, 760), "FRAMEWISE DEMO / GENERATED GEOMETRIC STUDY", fill="white")
+        ImageDraw.Draw(image).text(
+            (30, 760), "FRAMEWISE DEMO / GENERATED GEOMETRIC STUDY", fill="white"
+        )
         image.save(folder / f"DEMO-generated-{index + 1:02}.jpg", quality=90)
     print(
         f"Generated 8 original demo illustrations at {folder}. Scan this folder as DEMO — generated studies."

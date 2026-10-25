@@ -84,6 +84,7 @@ export interface Photo {
   highlights: HighlightEvidence | null;
 }
 export interface HighlightEvidence {
+  forced_inclusion?: boolean;
   embedding_provenance?: string | null;
   score: number;
   technical: number;

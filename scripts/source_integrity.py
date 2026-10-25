@@ -41,7 +41,9 @@ def main():
         baseline = json.loads(manifest.read_text(encoding="utf-8"))
         if baseline != records:
             raise SystemExit("SOURCE INTEGRITY MISMATCH")
-        print(f"VERIFIED: all {len(records)} files have identical SHA256, size and modification time")
+        print(
+            f"VERIFIED: all {len(records)} files have identical SHA256, size and modification time"
+        )
 
 
 if __name__ == "__main__":

@@ -706,7 +706,13 @@ function FinalistCard({
           #{rank} — {finalistNames[rank - 1]}
         </h3>
         <span>
-          {h.competition_origin === "manual" ? "YOUR CHOICE" : "AI ASSISTED"}
+          {h.competition_origin === "manual"
+            ? "YOUR CHOICE"
+            : h.forced_inclusion
+              ? "EXACTLY 3 OVERRIDE"
+              : p.aesthetic == null
+                ? "TECHNICAL ONLY"
+                : "AI ASSISTED"}
         </span>
       </div>
       <button
