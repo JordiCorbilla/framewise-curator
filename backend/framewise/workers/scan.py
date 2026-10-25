@@ -4,8 +4,20 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from PIL import Image
+
+from framewise.curation.highlights import rebuild, waiting
 from framewise.curation.ranking import recommend
-from framewise.db.models import Library, ModelRun, Photo, PhotoMetadata, PhotoMetrics, ScanJob, Session
+from framewise.db.models import (
+    Library,
+    ModelRun,
+    Photo,
+    PhotoEmbedding,
+    PhotoMetadata,
+    PhotoMetrics,
+    ScanJob,
+    Session,
+)
 from framewise.imaging.acquisition import acquire, cache_paths, discover, identity, source_path
 from framewise.imaging.exiftool import close_all
 from framewise.scoring.aesthetic import analyzer
@@ -25,6 +37,7 @@ class ScanManager:
             if db.query(ScanJob).filter(ScanJob.status.in_(ACTIVE)).first():
                 raise ValueError("A scan is already active. Cancel it or wait for completion.")
             analyzer.retry_failed()
+            waiting(db, library_id)
             job = ScanJob(library_id=library_id, progress={"stage": "queued"})
             db.add(job)
             db.flush()
@@ -107,6 +120,14 @@ class ScanManager:
                         and photo.identity == fingerprint
                         and all(p.is_file() for p in cache_paths(library.id, photo_id))
                     ):
+                        embedding = db.get(PhotoEmbedding, photo_id)
+                        if model_id != "classical-only-v1" and (
+                            embedding is None
+                            or embedding.model_id != model_id
+                            or embedding.identity != fingerprint
+                        ):
+                            work.append((photo_id, fingerprint, relative, True))
+                            continue
                         progress["reused"] += 1
                         progress["thumbnails"] += 1
                         progress["processed"] += 1
@@ -121,14 +142,36 @@ class ScanManager:
                         photo.selection_rank = None
                         db.query(PhotoMetrics).filter_by(photo_id=photo_id).delete()
                         db.query(PhotoMetadata).filter_by(photo_id=photo_id).delete()
-                        work.append((photo_id, fingerprint, relative))
+                        db.query(PhotoEmbedding).filter_by(photo_id=photo_id).delete()
+                        work.append((photo_id, fingerprint, relative, False))
                 progress["indexed"] = len(files)
             progress["stage"] = "previews & analysis"
             update()
 
             def process(item):
-                photo_id, fingerprint, relative = item
+                photo_id, fingerprint, relative, cached = item
                 try:
+                    if cached:
+                        with Session() as db:
+                            p = db.get(Photo, photo_id)
+                            metrics = db.get(PhotoMetrics, photo_id)
+                            metadata = db.get(PhotoMetadata, photo_id)
+                            with Image.open(cache_paths(library.id, photo_id)[0]) as preview:
+                                image = preview.convert("RGB")
+                            return (
+                                item,
+                                (
+                                    image,
+                                    metadata.data,
+                                    p.provenance,
+                                    p.width,
+                                    p.height,
+                                    metrics.raw,
+                                    metrics.calibrated,
+                                    p.phash,
+                                ),
+                                None,
+                            )
                     image, metadata, provenance, width, height = acquire(
                         source_path(root, relative), library.id, photo_id
                     )
@@ -151,10 +194,12 @@ class ScanManager:
                         "aesthetic inference" if model_id != "classical-only-v1" else "classical analysis"
                     )
                     update()
-                    scores = analyzer.analyze_batch([result[1][0] for result in good]) if good else []
+                    scores = (
+                        analyzer.analyze_with_embeddings([result[1][0] for result in good]) if good else []
+                    )
                     score_map = {result[0][0]: score for result, score in zip(good, scores, strict=True)}
                     with Session.begin() as db:
-                        for (photo_id, fingerprint, relative), result, error in batch:
+                        for (photo_id, fingerprint, relative, cached), result, error in batch:
                             photo = db.get(Photo, photo_id)
                             progress["current"] = photo.filename
                             progress["processed"] += 1
@@ -163,7 +208,10 @@ class ScanManager:
                                 progress["failed"] += 1
                                 continue
                             image, metadata, provenance, width, height, raw, calibrated, phash = result
-                            aesthetic = score_map[photo_id]
+                            aesthetic, embedding = score_map[photo_id]
+                            if cached:
+                                # Backfill embeddings without changing the measured aesthetic score.
+                                aesthetic = db.get(PhotoMetrics, photo_id).aesthetic
                             photo.status, photo.error, photo.identity = "ready", None, fingerprint
                             photo.provenance, photo.width, photo.height, photo.phash = (
                                 provenance,
@@ -181,6 +229,16 @@ class ScanManager:
                                     model_id=model_id if aesthetic is not None else None,
                                 )
                             )
+                            if embedding is not None:
+                                db.merge(
+                                    PhotoEmbedding(
+                                        photo_id=photo_id,
+                                        model_id=model_id,
+                                        identity=fingerprint,
+                                        vector=embedding.tobytes(),
+                                        provenance=("cached display JPEG" if cached else provenance),
+                                    )
+                                )
                             # Retry missing inference on resume, rather than caching it as scored.
                             if aesthetic is None and model_id != "classical-only-v1":
                                 photo.identity = identity(source_path(root, relative), "classical-only-v1")
@@ -196,6 +254,8 @@ class ScanManager:
                 recommend(db, db.get(Library, library.id))
             progress["stage"] = "cancelled" if stop.is_set() else "complete"
             update("cancelled" if stop.is_set() else "complete")
+            with Session.begin() as db:
+                rebuild(db, db.get(Library, library.id))
         except Exception as exc:
             progress.update(stage="failed", error=f"{type(exc).__name__}: {exc}")
             update("failed")

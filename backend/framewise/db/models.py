@@ -118,6 +118,13 @@ class PhotoEmbedding(Base):
     provenance: Mapped[str]
 
 
+class PhotoRawSource(Base):
+    __tablename__ = "photo_raw_sources"
+    photo_id: Mapped[str] = mapped_column(ForeignKey("photos.id"), primary_key=True)
+    raw_photo_id: Mapped[str] = mapped_column(ForeignKey("photos.id"), index=True)
+    method: Mapped[str]
+
+
 class HighlightState(Base):
     __tablename__ = "highlight_states"
     library_id: Mapped[str] = mapped_column(ForeignKey("libraries.id"), primary_key=True)
@@ -177,5 +184,6 @@ def initialize():
             job.status = "interrupted"
         db.flush()
         from framewise.curation.highlights import rebuild
+
         for library in db.query(Library):
             rebuild(db, library)

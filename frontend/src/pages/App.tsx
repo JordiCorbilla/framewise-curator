@@ -17,6 +17,7 @@ import {
   ScanLine,
   Settings2,
   ShieldCheck,
+  Trophy,
   X,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -26,14 +27,23 @@ import { Budget, Gallery } from "../features/curation/Gallery";
 import { ScanForm } from "./Scan";
 import { Export } from "./Export";
 import { Settings } from "./Settings";
+import { Highlights } from "./Highlights";
 import { api } from "../services/api";
 import type { Job, Library, ModelStatus, Photo } from "../types";
-type Page = "Library" | "Scan" | "Curate" | "Selected" | "Export" | "Settings";
+type Page =
+  | "Library"
+  | "Scan"
+  | "Curate"
+  | "Selected"
+  | "Highlights"
+  | "Export"
+  | "Settings";
 const navigation = [
   { label: "Library", icon: LibraryIcon },
   { label: "Scan", icon: ScanLine },
   { label: "Curate", icon: Grid2X2 },
   { label: "Selected", icon: CheckCheck },
+  { label: "Highlights", icon: Trophy },
   { label: "Export", icon: ArrowDownToLine },
   { label: "Settings", icon: Settings2 },
 ] as const;
@@ -58,11 +68,13 @@ export function App() {
     libraries.data?.find((l) => l.id === libraryId) ?? libraries.data?.[0];
   const [viewer, setViewer] = useState<Photo | null>(null);
   const [galleryItems, setGalleryItems] = useState<Photo[]>([]);
+  const [galleryFilter, setGalleryFilter] = useState<string | undefined>();
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["libraries"] });
     void client.invalidateQueries({ queryKey: ["photos"] });
     void client.invalidateQueries({ queryKey: ["photo"] });
     void client.invalidateQueries({ queryKey: ["related"] });
+    void client.invalidateQueries({ queryKey: ["highlights"] });
   };
   const change = useMutation({
     mutationFn: ({
@@ -118,6 +130,7 @@ export function App() {
   const choose = (lib: Library) => {
     setLibraryId(lib.id);
     setPage("Curate");
+    setGalleryFilter(undefined);
     setViewer(null);
   };
   return (
@@ -365,9 +378,7 @@ export function App() {
                         : "A FIRST PASS, THROUGH YOUR LENS"}
                     </div>
                     <h1>
-                      {page === "Selected"
-                        ? "Selected for editing"
-                        : library.name}
+                      {page === "Selected" ? "Lightroom Picks" : library.name}
                     </h1>
                     <p>
                       {library.total} photographs{" "}
@@ -425,8 +436,9 @@ export function App() {
                   </div>
                 )}
                 <Gallery
-                  key={`${library.id}-${page}`}
+                  key={`${library.id}-${page}-${galleryFilter}`}
                   library={library}
+                  initialFilter={galleryFilter}
                   selected={page === "Selected"}
                   decide={decide}
                   open={(p, items) => {
@@ -452,6 +464,26 @@ export function App() {
               refresh={refresh}
             />
           )}
+          {page === "Highlights" &&
+            (library ? (
+              <Highlights
+                key={library.id}
+                library={library}
+                onError={setError}
+                scanning={scan.isPending}
+                enrich={() => scan.mutate(library.id)}
+                onBrowse={(filter) => {
+                  setGalleryFilter(filter);
+                  setPage("Curate");
+                }}
+                open={(p, items) => {
+                  setViewer(p);
+                  setGalleryItems(items);
+                }}
+              />
+            ) : (
+              <NoCollection start={() => setPage("Scan")} />
+            ))}
         </main>
         <footer className="workspace-footer">
           <span>YOUR BEST FRAMES, DISCOVERED.</span>

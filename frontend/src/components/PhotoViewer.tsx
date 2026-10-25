@@ -14,6 +14,7 @@ import { useState } from "react";
 import { api } from "../services/api";
 import type { Photo, Photos } from "../types";
 import { Button } from "./ui/button";
+import { HighlightBadges } from "./HighlightBadges";
 
 function Metric({
   name,
@@ -219,6 +220,7 @@ export function PhotoViewer({
           </div>
           <aside className="viewer-details">
             <div className="eyebrow">FRAME ASSESSMENT</div>
+            <HighlightBadges photo={photo} />
             <div className="detail-score">
               {photo.score?.toFixed(1) ?? "—"}
               <span>/ 100</span>
@@ -336,6 +338,29 @@ export function PhotoViewer({
                     </button>
                   ))}
                 </div>
+              </section>
+            )}
+            {photo.highlights && (
+              <section className="lightbox-highlights">
+                <h3>Highlights evidence</h3>
+                <p className="footnote">
+                  Relative Highlights rank score{" "}
+                  {photo.highlights.score.toFixed(1)}/100. This is separate from
+                  the ordinary curation score above.
+                </p>
+                <ul>
+                  {photo.highlights.strengths.map((text) => (
+                    <li key={text}>{text}</li>
+                  ))}
+                </ul>
+                <details>
+                  <summary>Measured weaknesses & uncertainties</summary>
+                  <ul>
+                    {photo.highlights.uncertainties.map((text) => (
+                      <li key={text}>{text}</li>
+                    ))}
+                  </ul>
+                </details>
               </section>
             )}
             <section className="exif">

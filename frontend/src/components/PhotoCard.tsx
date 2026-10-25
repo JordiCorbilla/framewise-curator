@@ -1,5 +1,6 @@
 import { Check, Layers, X, Star, CircleHelp } from "lucide-react";
 import type { Photo } from "../types";
+import { HighlightBadges } from "./HighlightBadges";
 
 export function PhotoCard({
   photo: p,
@@ -76,6 +77,7 @@ export function PhotoCard({
           <small> / 100</small>
         </span>
       </div>
+      <HighlightBadges photo={p} />
       <div className="card-controls">
         <div className="star-controls">
           {[1, 2, 3, 4, 5].map((n) => (

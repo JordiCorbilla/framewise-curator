@@ -73,6 +73,7 @@ export function Gallery({
   selected,
   decide,
   open,
+  initialFilter,
 }: {
   library: Library;
   selected: boolean;
@@ -81,9 +82,19 @@ export function Gallery({
     data: Partial<Pick<Photo, "decision" | "stars">>,
   ) => void;
   open: (p: Photo, items: Photo[]) => void;
+  initialFilter?: string;
 }) {
-  const [filter, setFilter] = useState(selected ? "selected" : "all");
-  const [sort, setSort] = useState("score");
+  const [filter, setFilter] = useState(
+    selected ? "selected" : (initialFilter ?? "all"),
+  );
+  const [sort, setSort] = useState(
+    initialFilter === "competition"
+      ? "competition"
+      : initialFilter &&
+          ["flickr", "competition_alternatives"].includes(initialFilter)
+        ? "highlights"
+        : "score",
+  );
   const [page, setPage] = useState(1);
   const result = useQuery({
     queryKey: ["photos", library.id, filter, sort, page],
@@ -95,13 +106,17 @@ export function Gallery({
   });
   const filters = selected
     ? [
-        ["selected", "Final selection"],
+        ["selected", "Lightroom Picks"],
         ["ai", "AI recommendations"],
         ["manual", "My picks"],
       ]
     : [
         ["all", "All Photos"],
         ["ai", "AI Picks"],
+        ["lightroom", "Lightroom Picks"],
+        ["flickr", "Flickr Standouts"],
+        ["competition", "Competition Top 3"],
+        ["competition_alternatives", "Other candidates"],
         ["manual", "My Picks"],
         ["review", "Review"],
         ["low", "Low Priority"],
@@ -119,6 +134,9 @@ export function Gallery({
               className={filter === key ? "active" : ""}
               onClick={() => {
                 setFilter(key);
+                if (key === "competition") setSort("competition");
+                if (["flickr", "competition_alternatives"].includes(key))
+                  setSort("highlights");
                 setPage(1);
               }}
             >
@@ -141,6 +159,8 @@ export function Gallery({
             <option value="filename">Filename</option>
             <option value="sharpness">Sharpness</option>
             <option value="aesthetic">Aesthetic model</option>
+            <option value="highlights">Highlights rank score</option>
+            <option value="competition">Competition rank</option>
           </select>
         </label>
       </div>

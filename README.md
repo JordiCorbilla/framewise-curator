@@ -6,6 +6,10 @@ FastAPI + SQLite, React 19 + TypeScript, real CPU aesthetic inference, read-only
 Scan a trip, inspect measured quality, compare conservative similarity groups, keep/exclude/rate,
 and export a shortlist for Lightroom Classic. No uploads, cloud inference or telemetry.
 
+**Highlights** adds Flickr Standouts and a separate, diversity-aware Competition Top 3, with gold/silver/
+bronze finalist cards, measured evidence, alternatives, side-by-side comparison, manual replacement and
+four category CSV exports. [Workflow, ranking limits and offline evaluation](docs/highlights.md).
+
 ## Start on Windows
 
 Prerequisites: Python **3.11+**, Node **22.12+**, [uv](https://docs.astral.sh/uv/),
@@ -86,7 +90,7 @@ app-data input exception.)
 [Lightroom](docs/lightroom.md) · [Validation](docs/validation.md)
 
 Deferred: XMP writes, automatic RAW copying, richer critiques, personal preference learning,
-genre-specific tuning, side-by-side comparison and sensor-level 100% RAW inspection.
+genre-specific tuning, a general burst-comparison workspace and sensor-level 100% RAW inspection.
 Native folder picking is unavailable in the browser; manual path entry is provided.
 
 UI inspiration: [Facet](https://github.com/ncoevoet/facet), [Selects](https://github.com/bihanikeshav/selects).

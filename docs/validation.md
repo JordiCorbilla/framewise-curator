@@ -1,5 +1,8 @@
 # Initial-use validation — 25 October 2026
 
+This records the original 381-NEF MVP validation. The later Highlights extension and the recursive
+collection's additional postproduction JPEGs are covered in [Highlights validation](highlights-validation.md).
+
 **Milestone 1: validated on the supplied Nikon D850 collection.** This is functional evidence, not an
 evaluation of aesthetic ranking accuracy. XMP writes and richer intelligence remain deferred.
 

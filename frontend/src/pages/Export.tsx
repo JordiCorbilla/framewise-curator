@@ -3,7 +3,12 @@ import { ArrowDownToLine, CircleHelp } from "lucide-react";
 import type { Library } from "../types";
 import { Button } from "../components/ui/button";
 import { api } from "../services/api";
+import type { HighlightsData } from "../types";
 export function Export({ library }: { library: Library }) {
+  const highlights = useQuery({
+    queryKey: ["highlights", library.id],
+    queryFn: () => api<HighlightsData>(`/libraries/${library.id}/highlights`),
+  });
   const xmp = useQuery({
     queryKey: ["xmp", library.id],
     queryFn: () =>
@@ -53,6 +58,60 @@ export function Export({ library }: { library: Library }) {
             </Button>
             <p className="footnote">
               No photographs are copied. Exports point to your original files.
+            </p>
+          </section>
+          <section className="export-card">
+            <h2>Three levels of selection</h2>
+            <p>
+              Independent Lightroom, Flickr and competition recommendations.
+              Each CSV includes original paths, ranks, measured evidence, manual
+              overrides and version provenance.
+            </p>
+            {[
+              ["lightroom_picks.csv", "Lightroom Picks", library.selected],
+              [
+                "flickr_standouts.csv",
+                "Flickr Standouts",
+                highlights.data?.summary.flickr_count,
+              ],
+              [
+                "competition_top3.csv",
+                "Competition Top 3",
+                highlights.data?.summary.finalist_count,
+              ],
+              [
+                "competition_alternatives.csv",
+                "Competition alternatives",
+                highlights.data?.summary.alternatives?.length,
+              ],
+            ].map(([file, label, count]) =>
+              file === "lightroom_picks.csv" ||
+              highlights.data?.status === "ready" ? (
+                <Button key={file} variant="outline" asChild>
+                  <a
+                    href={`/api/libraries/${library.id}/export/${file}`}
+                    download
+                  >
+                    <ArrowDownToLine size={14} />
+                    {label} · {count ?? 0} · CSV
+                  </a>
+                </Button>
+              ) : (
+                <Button key={file} variant="outline" disabled>
+                  {label} · finish analysis first
+                </Button>
+              ),
+            )}
+            {highlights.error && (
+              <p className="error">{highlights.error.message}</p>
+            )}
+            <p className="footnote">
+              Verified edited-JPEG / NEF pairs point to the original NEF.
+              Analysis filenames and provenance remain in the CSV. Unpaired
+              rasters keep their own original path. Each row is a
+              recommendation; a RAW path may repeat when multiple versions were
+              manually selected. No Flickr uploads or competition submissions
+              are performed.
             </p>
           </section>
           <section className="export-card disabled-card">

@@ -5,6 +5,7 @@ import importlib.util
 import json
 from typing import Protocol
 
+import numpy as np
 from PIL import Image
 
 from framewise.core.config import MODELS
@@ -12,6 +13,9 @@ from framewise.core.config import MODELS
 
 class PhotoAnalyzer(Protocol):
     def analyze_batch(self, images: list[Image.Image]) -> list[float | None]: ...
+    def analyze_with_embeddings(
+        self, images: list[Image.Image]
+    ) -> list[tuple[float | None, np.ndarray | None]]: ...
 
 
 class AestheticAnalyzer:
@@ -101,8 +105,11 @@ class AestheticAnalyzer:
             self.loaded_id = None
 
     def analyze_batch(self, images):
+        return [result[0] for result in self.analyze_with_embeddings(images)]
+
+    def analyze_with_embeddings(self, images):
         if self.status()["status"] not in ("ready", "loading"):
-            return [None] * len(images)
+            return [(None, None)] * len(images)
         try:
             import torch
 
@@ -112,10 +119,12 @@ class AestheticAnalyzer:
                     torch.stack([self.transform(im) for im in images])
                 ).float()
                 embeddings /= embeddings.norm(dim=-1, keepdim=True).clamp_min(1e-12)
-                return [float(v) for v in self.head(embeddings).flatten().tolist()]
+                scores = self.head(embeddings).flatten().tolist()
+                vectors = embeddings.cpu().numpy().astype("float32")
+                return [(float(score), vector.copy()) for score, vector in zip(scores, vectors, strict=True)]
         except Exception as exc:
             self.error = str(exc)
-            return [None] * len(images)
+            return [(None, None)] * len(images)
 
 
 analyzer = AestheticAnalyzer()
