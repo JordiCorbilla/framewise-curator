@@ -43,8 +43,12 @@ async def lifespan(_):
 
 app = FastAPI(title="Framewise", version="0.1.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
-app.add_middleware(CORSMiddleware, allow_origins=ORIGINS, allow_methods=["GET", "POST", "PATCH"],
-                   allow_headers=["Content-Type"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINS,
+    allow_methods=["GET", "POST", "PATCH"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.middleware("http")
@@ -68,17 +72,27 @@ def required(db, cls, object_id):
 
 
 def photo_query(db, library_id):
-    return (db.query(Photo, PhotoMetrics, PhotoDecision, PhotoMetadata, SimilarityGroup)
-            .outerjoin(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
-            .outerjoin(PhotoDecision, PhotoDecision.photo_id == Photo.id)
-            .outerjoin(PhotoMetadata, PhotoMetadata.photo_id == Photo.id)
-            .outerjoin(SimilarityGroup, SimilarityGroup.id == Photo.group_id)
-            .filter(Photo.library_id == library_id))
+    return (
+        db.query(Photo, PhotoMetrics, PhotoDecision, PhotoMetadata, SimilarityGroup)
+        .outerjoin(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
+        .outerjoin(PhotoDecision, PhotoDecision.photo_id == Photo.id)
+        .outerjoin(PhotoMetadata, PhotoMetadata.photo_id == Photo.id)
+        .outerjoin(SimilarityGroup, SimilarityGroup.id == Photo.group_id)
+        .filter(Photo.library_id == library_id)
+    )
 
 
 def selected_expression():
-    return and_(Photo.status == "ready", or_(PhotoDecision.decision == "keep", and_(
-        or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"), Photo.recommendation == "pick")))
+    return and_(
+        Photo.status == "ready",
+        or_(
+            PhotoDecision.decision == "keep",
+            and_(
+                or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
+                Photo.recommendation == "pick",
+            ),
+        ),
+    )
 
 
 def serialize(row, source):
@@ -95,30 +109,59 @@ def serialize(row, source):
         explanation.append(f"Detail {calibrated['sharpness']:.0f}/100; focus {calibrated['focus_risk']}")
     if group:
         explanation.append(f"Frame {p.group_rank} of {group.count}; {group.reason}")
-    return {"id": p.id, "library_id": p.library_id, "filename": p.filename, "relative_path": p.relative_path,
-            "original_path": str(source_path(source, p.relative_path)), "status": p.status, "error": p.error,
-            "provenance": p.provenance, "width": p.width, "height": p.height, "score": p.score,
-            "recommendation": p.recommendation, "selection_rank": p.selection_rank,
-            "aesthetic": metrics.aesthetic if metrics else None, "raw": metrics.raw if metrics else {},
-            "calibrated": calibrated, "model_id": metrics.model_id if metrics else None,
-            "metadata": metadata.data if metadata else {}, "decision": manual,
-            "stars": decision.stars if decision else 0, "selected": selected, "group_id": p.group_id,
-            "group_rank": p.group_rank, "group_count": group.count if group else 1,
-            "group_protected": group.protected if group else False, "explanation": "; ".join(explanation) + ".",
-            "thumbnail": f"/api/photos/{p.id}/thumbnail" if p.status == "ready" else None,
-            "preview": f"/api/photos/{p.id}/preview" if p.status == "ready" else None}
+    return {
+        "id": p.id,
+        "library_id": p.library_id,
+        "filename": p.filename,
+        "relative_path": p.relative_path,
+        "original_path": str(source_path(source, p.relative_path)),
+        "status": p.status,
+        "error": p.error,
+        "provenance": p.provenance,
+        "width": p.width,
+        "height": p.height,
+        "score": p.score,
+        "recommendation": p.recommendation,
+        "selection_rank": p.selection_rank,
+        "aesthetic": metrics.aesthetic if metrics else None,
+        "raw": metrics.raw if metrics else {},
+        "calibrated": calibrated,
+        "model_id": metrics.model_id if metrics else None,
+        "metadata": metadata.data if metadata else {},
+        "decision": manual,
+        "stars": decision.stars if decision else 0,
+        "selected": selected,
+        "group_id": p.group_id,
+        "group_rank": p.group_rank,
+        "group_count": group.count if group else 1,
+        "group_protected": group.protected if group else False,
+        "explanation": "; ".join(explanation) + ".",
+        "thumbnail": f"/api/photos/{p.id}/thumbnail" if p.status == "ready" else None,
+        "preview": f"/api/photos/{p.id}/preview" if p.status == "ready" else None,
+    }
 
 
 def library_info(db, lib):
-    counts = dict(db.query(Photo.status, func.count()).filter_by(library_id=lib.id).group_by(Photo.status).all())
+    counts = dict(
+        db.query(Photo.status, func.count()).filter_by(library_id=lib.id).group_by(Photo.status).all()
+    )
     latest = db.query(ScanJob).filter_by(library_id=lib.id).order_by(ScanJob.created.desc()).first()
     selected = photo_query(db, lib.id).filter(selected_expression()).count()
     cover = db.query(Photo).filter_by(library_id=lib.id, status="ready").order_by(Photo.score.desc()).first()
-    return {"id": lib.id, "name": lib.name, "source": lib.source, "created": lib.created, "budget": lib.budget,
-            "config": lib.config, "total": sum(counts.values()), "ready": counts.get("ready", 0),
-            "failed": counts.get("failed", 0), "selected": selected,
-            "cover": f"/api/photos/{cover.id}/preview" if cover else None,
-            "job": job_info(latest) if latest else None}
+    return {
+        "id": lib.id,
+        "name": lib.name,
+        "source": lib.source,
+        "created": lib.created,
+        "budget": lib.budget,
+        "config": lib.config,
+        "total": sum(counts.values()),
+        "ready": counts.get("ready", 0),
+        "failed": counts.get("failed", 0),
+        "selected": selected,
+        "cover": f"/api/photos/{cover.id}/preview" if cover else None,
+        "job": job_info(latest) if latest else None,
+    }
 
 
 def job_info(job):
@@ -127,7 +170,12 @@ def job_info(job):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "data_directory": str(DATA), "exiftool": exiftool_path(), "model": analyzer.status()}
+    return {
+        "status": "ok",
+        "data_directory": str(DATA),
+        "exiftool": exiftool_path(),
+        "model": analyzer.status(),
+    }
 
 
 @app.get("/api/libraries")
@@ -148,8 +196,11 @@ def create_library(body: LibraryCreate):
         existing = db.query(Library).filter_by(source=str(source)).first()
         if existing:
             return library_info(db, existing)
-        lib = Library(source=str(source), name=body.name.strip() or source.name,
-                      config={"weights": DEFAULT_WEIGHTS, "recursive": body.recursive})
+        lib = Library(
+            source=str(source),
+            name=body.name.strip() or source.name,
+            config={"weights": DEFAULT_WEIGHTS, "recursive": body.recursive},
+        )
         db.add(lib)
         db.flush()
         return library_info(db, lib)
@@ -204,36 +255,69 @@ async def events(job_id: str, request: Request):
             if data["status"] not in ACTIVE:
                 break
             await asyncio.sleep(0.75)
-    return StreamingResponse(stream(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/libraries/{library_id}/photos")
-def photos(library_id: str, filter: str = "all", sort: str = "score", page: int = Query(1, ge=1),
-           limit: int = Query(48, ge=1, le=100), group_id: str | None = None):
+def photos(
+    library_id: str,
+    filter: str = "all",
+    sort: str = "score",
+    page: int = Query(1, ge=1),
+    limit: int = Query(48, ge=1, le=100),
+    group_id: str | None = None,
+):
     with Session() as db:
         lib = required(db, Library, library_id)
         query = photo_query(db, library_id)
-        filters = {"all": True, "ai": Photo.recommendation == "pick", "manual": PhotoDecision.decision == "keep",
-                   "selected": selected_expression(), "review": or_(PhotoDecision.decision == "review", and_(
-                       or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
-                       Photo.recommendation == "review")),
-                   "low": or_(PhotoDecision.decision == "reject", Photo.recommendation == "low"),
-                   "similar": Photo.group_id.is_not(None), "failed": Photo.status != "ready"}
+        filters = {
+            "all": True,
+            "ai": Photo.recommendation == "pick",
+            "manual": PhotoDecision.decision == "keep",
+            "selected": selected_expression(),
+            "review": or_(
+                PhotoDecision.decision == "review",
+                and_(
+                    or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
+                    Photo.recommendation == "review",
+                ),
+            ),
+            "low": or_(PhotoDecision.decision == "reject", Photo.recommendation == "low"),
+            "similar": Photo.group_id.is_not(None),
+            "failed": Photo.status != "ready",
+        }
         if filter not in filters:
             raise HTTPException(422, "Unknown filter")
         query = query.filter(filters[filter])
         if group_id:
             query = query.filter(Photo.group_id == group_id)
-        orders = {"score": Photo.score.desc(), "filename": Photo.filename.asc(),
-                  "date": PhotoMetadata.data["DateTimeOriginal"].as_string().asc(),
-                  "sharpness": PhotoMetrics.calibrated["sharpness"].as_float().desc(),
-                  "aesthetic": PhotoMetrics.aesthetic.desc()}
+        orders = {
+            "score": Photo.score.desc(),
+            "filename": Photo.filename.asc(),
+            "date": PhotoMetadata.data["DateTimeOriginal"].as_string().asc(),
+            "sharpness": PhotoMetrics.calibrated["sharpness"].as_float().desc(),
+            "aesthetic": PhotoMetrics.aesthetic.desc(),
+        }
         if sort not in orders:
             raise HTTPException(422, "Unknown sort")
         total = query.count()
-        rows = query.order_by(orders[sort], Photo.filename, Photo.id).offset((page - 1) * limit).limit(limit).all()
-        return {"items": [serialize(row, lib.source) for row in rows], "total": total, "page": page, "limit": limit}
+        rows = (
+            query.order_by(orders[sort], Photo.filename, Photo.id)
+            .offset((page - 1) * limit)
+            .limit(limit)
+            .all()
+        )
+        return {
+            "items": [serialize(row, lib.source) for row in rows],
+            "total": total,
+            "page": page,
+            "limit": limit,
+        }
 
 
 @app.get("/api/photos/{photo_id}")
@@ -308,8 +392,11 @@ def export_csv(library_id: str, filename: str):
         rows = query.order_by(case((Photo.selection_rank.is_(None), 1), else_=0), Photo.selection_rank).all()
         data = make_csv([serialize(row, lib.source) for row in rows])
         db.add(ExportJob(library_id=library_id, kind=filename, count=len(rows)))
-    return Response(data, media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+    return Response(
+        data,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/api/libraries/{library_id}/xmp/preview")
@@ -321,14 +408,19 @@ def xmp_preview(library_id: str):
             source = source_path(lib.source, p.relative_path)
             sidecars = [source.with_suffix(".xmp"), source.with_suffix(".XMP")]
             conflicts.extend(str(path) for path in sidecars if path.exists())
-        return {"enabled": False, "reason": "Sidecar writing is disabled until Lightroom round-trip validation. "
-                "Use CSV export. Existing sidecars and all originals remain untouched.",
-                "conflicts": sorted(set(conflicts))}
+        return {
+            "enabled": False,
+            "reason": "Sidecar writing is disabled until Lightroom round-trip validation. "
+            "Use CSV export. Existing sidecars and all originals remain untouched.",
+            "conflicts": sorted(set(conflicts)),
+        }
 
 
 @app.post("/api/libraries/{library_id}/xmp/confirm")
 def xmp_confirm(library_id: str):
-    raise HTTPException(409, "XMP writing is disabled: Lightroom metadata preservation has not been validated")
+    raise HTTPException(
+        409, "XMP writing is disabled: Lightroom metadata preservation has not been validated"
+    )
 
 
 frontend = Path(__file__).resolve().parents[3] / "frontend" / "dist"

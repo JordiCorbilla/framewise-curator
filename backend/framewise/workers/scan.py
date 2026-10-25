@@ -42,14 +42,29 @@ class ScanManager:
 
     def run(self, job_id, stop):
         started = time.monotonic()
-        progress = {"stage": "discovering", "total": 0, "indexed": 0, "thumbnails": 0, "scored": 0,
-                    "failed": 0, "reused": 0, "processed": 0, "current": "", "elapsed": 0, "speed": 0,
-                    "percent": 0, "ai_available": analyzer.status()["status"] == "ready"}
+        progress = {
+            "stage": "discovering",
+            "total": 0,
+            "indexed": 0,
+            "thumbnails": 0,
+            "scored": 0,
+            "failed": 0,
+            "reused": 0,
+            "processed": 0,
+            "current": "",
+            "elapsed": 0,
+            "speed": 0,
+            "percent": 0,
+            "ai_available": analyzer.status()["status"] == "ready",
+        }
 
         def update(status="running"):
             elapsed = time.monotonic() - started
-            progress.update(elapsed=round(elapsed, 1), speed=round(progress["processed"] / max(elapsed, 0.1), 2),
-                            percent=round(100 * progress["processed"] / max(progress["total"], 1), 1))
+            progress.update(
+                elapsed=round(elapsed, 1),
+                speed=round(progress["processed"] / max(elapsed, 0.1), 2),
+                percent=round(100 * progress["processed"] / max(progress["total"], 1), 1),
+            )
             with Session.begin() as db:
                 job = db.get(ScanJob, job_id)
                 job.status, job.progress = status, dict(progress)
@@ -72,10 +87,15 @@ class ScanManager:
                     photo = db.get(Photo, photo_id)
                     fingerprint = identity(path, model_id)
                     if photo is None:
-                        photo = Photo(id=photo_id, library_id=library.id, relative_path=relative, filename=path.name)
+                        photo = Photo(
+                            id=photo_id, library_id=library.id, relative_path=relative, filename=path.name
+                        )
                         db.add(photo)
-                    if photo.status == "ready" and photo.identity == fingerprint and all(
-                            p.is_file() for p in cache_paths(library.id, photo_id)):
+                    if (
+                        photo.status == "ready"
+                        and photo.identity == fingerprint
+                        and all(p.is_file() for p in cache_paths(library.id, photo_id))
+                    ):
                         progress["reused"] += 1
                         progress["thumbnails"] += 1
                         progress["processed"] += 1
@@ -92,7 +112,8 @@ class ScanManager:
                 photo_id, fingerprint, relative = item
                 try:
                     image, metadata, provenance, width, height = acquire(
-                        source_path(root, relative), library.id, photo_id)
+                        source_path(root, relative), library.id, photo_id
+                    )
                     raw, calibrated, phash = classical(image)
                     return item, (image, metadata, provenance, width, height, raw, calibrated, phash), None
                 except Exception as exc:
@@ -103,9 +124,11 @@ class ScanManager:
                 for offset in range(0, len(work), 8):
                     if stop.is_set():
                         break
-                    batch = list(pool.map(process, work[offset:offset + 8]))
+                    batch = list(pool.map(process, work[offset : offset + 8]))
                     good = [result for result in batch if result[1] is not None]
-                    progress["stage"] = "aesthetic inference" if model_id != "classical-only-v1" else "classical analysis"
+                    progress["stage"] = (
+                        "aesthetic inference" if model_id != "classical-only-v1" else "classical analysis"
+                    )
                     update()
                     scores = analyzer.analyze_batch([result[1][0] for result in good]) if good else []
                     score_map = {result[0][0]: score for result, score in zip(good, scores, strict=True)}
@@ -121,10 +144,22 @@ class ScanManager:
                             image, metadata, provenance, width, height, raw, calibrated, phash = result
                             aesthetic = score_map[photo_id]
                             photo.status, photo.error, photo.identity = "ready", None, fingerprint
-                            photo.provenance, photo.width, photo.height, photo.phash = provenance, width, height, phash
+                            photo.provenance, photo.width, photo.height, photo.phash = (
+                                provenance,
+                                width,
+                                height,
+                                phash,
+                            )
                             db.merge(PhotoMetadata(photo_id=photo_id, data=metadata))
-                            db.merge(PhotoMetrics(photo_id=photo_id, raw=raw, calibrated=calibrated,
-                                                  aesthetic=aesthetic, model_id=model_id if aesthetic is not None else None))
+                            db.merge(
+                                PhotoMetrics(
+                                    photo_id=photo_id,
+                                    raw=raw,
+                                    calibrated=calibrated,
+                                    aesthetic=aesthetic,
+                                    model_id=model_id if aesthetic is not None else None,
+                                )
+                            )
                             # If inference failed, a resume must retry rather than cache the missing output as scored.
                             if aesthetic is None and model_id != "classical-only-v1":
                                 photo.identity = identity(source_path(root, relative), "classical-only-v1")

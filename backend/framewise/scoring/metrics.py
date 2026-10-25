@@ -19,10 +19,21 @@ def classical(image: Image.Image):
     highlights = float((gray >= 0.985).mean())
     shadows = float((gray <= 0.015).mean())
     exposure = float(np.clip(100 - highlights * 100 - shadows * 35, 0, 100))
-    raw = {"laplacian_variance": lap, "normalized_detail": normalized, "edge_density": edge_density,
-           "contrast": contrast, "mean_luminance": float(gray.mean()), "highlight_clipping": highlights,
-           "shadow_clipping": shadows, "mean_rgb": [float(v) for v in rgb.mean(axis=(0, 1))]}
-    calibrated = {"sharpness": round(sharpness, 3), "exposure": round(exposure, 3),
-                  "focus_risk": "uncertain: low texture" if edge_density < 0.04 else
-                  ("inspect" if sharpness < 30 else "lower risk")}
+    raw = {
+        "laplacian_variance": lap,
+        "normalized_detail": normalized,
+        "edge_density": edge_density,
+        "contrast": contrast,
+        "mean_luminance": float(gray.mean()),
+        "highlight_clipping": highlights,
+        "shadow_clipping": shadows,
+        "mean_rgb": [float(v) for v in rgb.mean(axis=(0, 1))],
+    }
+    calibrated = {
+        "sharpness": round(sharpness, 3),
+        "exposure": round(exposure, 3),
+        "focus_risk": "uncertain: low texture"
+        if edge_density < 0.04
+        else ("inspect" if sharpness < 30 else "lower risk"),
+    }
     return raw, calibrated, str(imagehash.phash(sample))

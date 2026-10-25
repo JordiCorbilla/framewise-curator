@@ -1,4 +1,5 @@
 """Offline-only OpenAI CLIP ViT-B/32 + LAION V1 512-dimensional linear head."""
+
 import hashlib
 import importlib.util
 import json
@@ -24,16 +25,38 @@ class AestheticAnalyzer:
     def status(self):
         paths = [MODELS / "clip.pt", MODELS / "aesthetic.pth", MODELS / "manifest.json"]
         installed = all(p.is_file() for p in paths)
-        deps = importlib.util.find_spec("open_clip") is not None and importlib.util.find_spec("torch") is not None
-        status = ("loading" if self.loading else "failed" if self.error else
-                  "ready" if installed and deps else "unavailable" if installed else "download_required")
-        return {"status": status, "installed": installed, "dependencies": deps, "error": self.error,
-                "model_id": self.model_id(), "directory": str(MODELS), "device": "cpu"}
+        deps = (
+            importlib.util.find_spec("open_clip") is not None
+            and importlib.util.find_spec("torch") is not None
+        )
+        status = (
+            "loading"
+            if self.loading
+            else "failed"
+            if self.error
+            else "ready"
+            if installed and deps
+            else "unavailable"
+            if installed
+            else "download_required"
+        )
+        return {
+            "status": status,
+            "installed": installed,
+            "dependencies": deps,
+            "error": self.error,
+            "model_id": self.model_id(),
+            "directory": str(MODELS),
+            "device": "cpu",
+        }
 
     def model_id(self):
         manifest = MODELS / "manifest.json"
-        return ("openai-ViT-B-32-laion-v1:" + hashlib.sha256(manifest.read_bytes()).hexdigest()[:16]
-                if manifest.exists() else "classical-only-v1")
+        return (
+            "openai-ViT-B-32-laion-v1:" + hashlib.sha256(manifest.read_bytes()).hexdigest()[:16]
+            if manifest.exists()
+            else "classical-only-v1"
+        )
 
     def load(self):
         if self.model is not None:
@@ -50,7 +73,8 @@ class AestheticAnalyzer:
                     raise ValueError(f"Model checksum mismatch: {filename}")
             torch.set_num_threads(min(4, torch.get_num_threads()))
             model, _, transform = open_clip.create_model_and_transforms(
-                "ViT-B-32", pretrained=str(MODELS / "clip.pt"), device="cpu", force_quick_gelu=True)
+                "ViT-B-32", pretrained=str(MODELS / "clip.pt"), device="cpu", force_quick_gelu=True
+            )
             head = torch.nn.Linear(512, 1)
             head.load_state_dict(torch.load(MODELS / "aesthetic.pth", map_location="cpu", weights_only=True))
             self.model, self.head, self.transform = model.eval(), head.eval(), transform
@@ -68,7 +92,9 @@ class AestheticAnalyzer:
 
             self.load()
             with torch.inference_mode():
-                embeddings = self.model.encode_image(torch.stack([self.transform(im) for im in images])).float()
+                embeddings = self.model.encode_image(
+                    torch.stack([self.transform(im) for im in images])
+                ).float()
                 embeddings /= embeddings.norm(dim=-1, keepdim=True).clamp_min(1e-12)
                 return [float(v) for v in self.head(embeddings).flatten().tolist()]
         except Exception as exc:

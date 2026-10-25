@@ -8,7 +8,9 @@ from framewise.db.models import Photo, PhotoMetadata, PhotoMetrics, SimilarityGr
 
 def timestamp(metadata):
     try:
-        return datetime.strptime(str(metadata.get("DateTimeOriginal", ""))[:19], "%Y:%m:%d %H:%M:%S").timestamp()
+        return datetime.strptime(
+            str(metadata.get("DateTimeOriginal", ""))[:19], "%Y:%m:%d %H:%M:%S"
+        ).timestamp()
     except ValueError:
         return None
 
@@ -23,9 +25,13 @@ def combined_score(calibrated, aesthetic, weights):
 
 def regroup(db, library_id):
     db.query(SimilarityGroup).filter_by(library_id=library_id).delete()
-    rows = (db.query(Photo, PhotoMetadata, PhotoMetrics).join(PhotoMetadata, PhotoMetadata.photo_id == Photo.id)
-            .join(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
-            .filter(Photo.library_id == library_id, Photo.status == "ready").all())
+    rows = (
+        db.query(Photo, PhotoMetadata, PhotoMetrics)
+        .join(PhotoMetadata, PhotoMetadata.photo_id == Photo.id)
+        .join(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
+        .filter(Photo.library_id == library_id, Photo.status == "ready")
+        .all()
+    )
     rows.sort(key=lambda row: (timestamp(row[1].data) or 0, row[0].filename, row[0].id))
     buckets = []
     for photo, metadata, metrics in rows:
@@ -37,7 +43,9 @@ def regroup(db, library_id):
             anchor_time = timestamp(anchor_meta.data)
             distance = (int(photo.phash, 16) ^ int(anchor.phash, 16)).bit_count()
             same_shape = abs(photo.width / photo.height - anchor.width / anchor.height) < 0.035
-            close_time = captured is not None and anchor_time is not None and abs(captured - anchor_time) <= 12
+            close_time = (
+                captured is not None and anchor_time is not None and abs(captured - anchor_time) <= 12
+            )
             # Exact hashes can match without EXIF. Looser matches require a capture-time window.
             if same_shape and (distance == 0 or (close_time and distance <= 10)):
                 matched = group
@@ -56,17 +64,27 @@ def regroup(db, library_id):
         anchor_hash = int(members[0][0].phash, 16)
         uncertain = any((int(row[0].phash, 16) ^ anchor_hash).bit_count() > 6 for row in members)
         protected = len(compensation) > 1 or max(brightness) - min(brightness) > 0.13 or uncertain
-        reason = ("Possible bracket/sequence or uncertain match: review all members" if protected else
-                  "Near-identical perceptual hash; capture-time window when available")
-        db.add(SimilarityGroup(id=group_id, library_id=library_id, count=len(members),
-                               protected=protected, reason=reason))
+        reason = (
+            "Possible bracket/sequence or uncertain match: review all members"
+            if protected
+            else "Near-identical perceptual hash; capture-time window when available"
+        )
+        db.add(
+            SimilarityGroup(
+                id=group_id, library_id=library_id, count=len(members), protected=protected, reason=reason
+            )
+        )
         for index, (photo, _, _) in enumerate(members, 1):
             photo.group_id, photo.group_rank = group_id, index
 
 
 def recommend(db, library, group=True):
-    rows = db.query(Photo, PhotoMetrics).join(PhotoMetrics, PhotoMetrics.photo_id == Photo.id).filter(
-        Photo.library_id == library.id, Photo.status == "ready").all()
+    rows = (
+        db.query(Photo, PhotoMetrics)
+        .join(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
+        .filter(Photo.library_id == library.id, Photo.status == "ready")
+        .all()
+    )
     weights = library.config.get("weights", DEFAULT_WEIGHTS)
     for photo, metrics in rows:
         photo.score = combined_score(metrics.calibrated, metrics.aesthetic, weights)
@@ -75,10 +93,21 @@ def recommend(db, library, group=True):
         regroup(db, library.id)
     protected = {g.id for g in db.query(SimilarityGroup).filter_by(library_id=library.id, protected=True)}
     photos = [row[0] for row in rows]
-    photos.sort(key=lambda p: (bool(p.group_id and p.group_rank != 1 and p.group_id not in protected),
-                               -(p.score or 0), p.filename, p.id))
+    photos.sort(
+        key=lambda p: (
+            bool(p.group_id and p.group_rank != 1 and p.group_id not in protected),
+            -(p.score or 0),
+            p.filename,
+            p.id,
+        )
+    )
     budget = math.ceil(len(photos) * library.budget / 100)
     for index, photo in enumerate(photos):
         photo.selection_rank = index + 1
-        photo.recommendation = "pick" if index < budget else "review" if (
-            photo.group_id in protected or index < budget * 2) else "low"
+        photo.recommendation = (
+            "pick"
+            if index < budget
+            else "review"
+            if (photo.group_id in protected or index < budget * 2)
+            else "low"
+        )

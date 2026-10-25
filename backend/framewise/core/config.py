@@ -15,8 +15,11 @@ DEFAULT_WEIGHTS = {"aesthetic": 0.60, "sharpness": 0.25, "exposure": 0.15}
 
 
 def exiftool_path():
-    candidates = [os.environ.get("FRAMEWISE_EXIFTOOL"), shutil.which("exiftool"),
-                  str(DATA / "tools" / "exiftool.exe"),
-                  str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/ExifTool/exiftool.exe"),
-                  "C:/Program Files/ExifTool/exiftool.exe"]
+    candidates = [
+        os.environ.get("FRAMEWISE_EXIFTOOL"),
+        shutil.which("exiftool"),
+        str(DATA / "tools" / "exiftool.exe"),
+        str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/ExifTool/exiftool.exe"),
+        "C:/Program Files/ExifTool/exiftool.exe",
+    ]
     return next((p for p in candidates if p and Path(p).is_file()), None)

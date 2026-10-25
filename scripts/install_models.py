@@ -1,4 +1,5 @@
 """Run only with explicit download consent: python scripts/install_models.py --approve-download."""
+
 import argparse
 import hashlib
 import json
@@ -13,19 +14,27 @@ from framewise.core.config import MODELS  # noqa: E402
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--approve-download", action="store_true", required=True,
-                        help="Explicit consent to download model weights from OpenAI and LAION")
+    parser.add_argument(
+        "--approve-download",
+        action="store_true",
+        required=True,
+        help="Explicit consent to download model weights from OpenAI and LAION",
+    )
     parser.parse_args()
     import open_clip
 
     cfg = open_clip.get_pretrained_cfg("ViT-B-32", "openai")
     encoder_url = cfg["url"]
     # Pin the LAION checkpoint to the repository commit returned by GitHub, recorded in the manifest.
-    req = urllib.request.Request("https://api.github.com/repos/LAION-AI/aesthetic-predictor/commits/main",
-                                 headers={"User-Agent": "Framewise-model-installer"})
+    req = urllib.request.Request(
+        "https://api.github.com/repos/LAION-AI/aesthetic-predictor/commits/main",
+        headers={"User-Agent": "Framewise-model-installer"},
+    )
     commit = json.load(urllib.request.urlopen(req, timeout=60))["sha"]
-    urls = {"clip.pt": encoder_url, "aesthetic.pth":
-            f"https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/{commit}/sa_0_4_vit_b_32_linear.pth"}
+    urls = {
+        "clip.pt": encoder_url,
+        "aesthetic.pth": f"https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/{commit}/sa_0_4_vit_b_32_linear.pth",
+    }
     digests = {}
     for name, url in urls.items():
         destination = MODELS / name
@@ -38,10 +47,17 @@ def main():
             raise ValueError("OpenAI CLIP checksum verification failed")
         temporary.replace(destination)
         digests[name] = digest
-    manifest = {"encoder": "OpenAI CLIP ViT-B/32 (QuickGELU)", "embedding_dimensions": 512,
-                "normalization": "L2", "head": "LAION aesthetic predictor V1 linear (512 -> 1)",
-                "laion_commit": commit, "urls": urls, "sha256": digests,
-                "installed": datetime.now(UTC).isoformat(), "consent": "--approve-download"}
+    manifest = {
+        "encoder": "OpenAI CLIP ViT-B/32 (QuickGELU)",
+        "embedding_dimensions": 512,
+        "normalization": "L2",
+        "head": "LAION aesthetic predictor V1 linear (512 -> 1)",
+        "laion_commit": commit,
+        "urls": urls,
+        "sha256": digests,
+        "installed": datetime.now(UTC).isoformat(),
+        "consent": "--approve-download",
+    }
     (MODELS / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Installed. Provenance: {MODELS / 'manifest.json'}")
 

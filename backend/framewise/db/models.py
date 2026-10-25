@@ -26,7 +26,9 @@ class Library(Base):
     source: Mapped[str] = mapped_column(unique=True)
     created: Mapped[str] = mapped_column(default=now)
     budget: Mapped[int] = mapped_column(default=25)
-    config: Mapped[dict] = mapped_column(JSON, default=lambda: {"weights": DEFAULT_WEIGHTS, "recursive": True})
+    config: Mapped[dict] = mapped_column(
+        JSON, default=lambda: {"weights": DEFAULT_WEIGHTS, "recursive": True}
+    )
 
 
 class ScanJob(Base):

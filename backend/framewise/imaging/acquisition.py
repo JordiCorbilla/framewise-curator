@@ -12,7 +12,7 @@ SUPPORTED = {".nef", ".jpg", ".jpeg", ".png"}
 
 
 def discover(root: Path, recursive=True):
-    for p in (root.rglob("*") if recursive else root.iterdir()):
+    for p in root.rglob("*") if recursive else root.iterdir():
         if p.is_file() and p.suffix.lower() in SUPPORTED and not p.is_symlink():
             try:
                 p.resolve().relative_to(root.resolve())
@@ -29,16 +29,39 @@ def source_path(root, relative):
 
 def identity(path, model_id):
     stat = path.stat()
-    return hashlib.sha256(f"{path.resolve()}:{stat.st_size}:{stat.st_mtime_ns}:{VERSION}:{model_id}".encode()).hexdigest()
+    return hashlib.sha256(
+        f"{path.resolve()}:{stat.st_size}:{stat.st_mtime_ns}:{VERSION}:{model_id}".encode()
+    ).hexdigest()
 
 
 def read_metadata(path):
     tool = exiftool_path()
     if tool:
-        result = subprocess.run([tool, "-json", "-n", "-charset", "filename=UTF8", "-DateTimeOriginal",
-                                 "-Make", "-Model", "-LensModel", "-ISO", "-ExposureTime", "-FNumber",
-                                 "-FocalLength", "-Orientation", "-ExposureCompensation", "-ImageWidth",
-                                 "-ImageHeight", str(path)], capture_output=True, timeout=40, check=True)
+        result = subprocess.run(
+            [
+                tool,
+                "-json",
+                "-n",
+                "-charset",
+                "filename=UTF8",
+                "-DateTimeOriginal",
+                "-Make",
+                "-Model",
+                "-LensModel",
+                "-ISO",
+                "-ExposureTime",
+                "-FNumber",
+                "-FocalLength",
+                "-Orientation",
+                "-ExposureCompensation",
+                "-ImageWidth",
+                "-ImageHeight",
+                str(path),
+            ],
+            capture_output=True,
+            timeout=40,
+            check=True,
+        )
         return json.loads(result.stdout.decode("utf-8"))[0]
     if path.suffix.lower() == ".nef":
         return {}
@@ -49,15 +72,25 @@ def read_metadata(path):
             values.update(exif.get_ifd(ExifTags.IFD.Exif))
         except (KeyError, TypeError):
             pass
-        return {ExifTags.TAGS.get(k, str(k)): str(v) if not isinstance(v, (int, float)) else v
-                for k, v in values.items()}
+        return {
+            ExifTags.TAGS.get(k, str(k)): str(v) if not isinstance(v, (int, float)) else v
+            for k, v in values.items()
+        }
 
 
 def orient(image, orientation):
-    operations = {2: Image.Transpose.FLIP_LEFT_RIGHT, 3: Image.Transpose.ROTATE_180,
-                  4: Image.Transpose.FLIP_TOP_BOTTOM, 5: Image.Transpose.TRANSPOSE,
-                  6: Image.Transpose.ROTATE_270, 7: Image.Transpose.TRANSVERSE, 8: Image.Transpose.ROTATE_90}
-    return image.transpose(operations[int(orientation)]) if int(orientation or 1) in operations else image.copy()
+    operations = {
+        2: Image.Transpose.FLIP_LEFT_RIGHT,
+        3: Image.Transpose.ROTATE_180,
+        4: Image.Transpose.FLIP_TOP_BOTTOM,
+        5: Image.Transpose.TRANSPOSE,
+        6: Image.Transpose.ROTATE_270,
+        7: Image.Transpose.TRANSVERSE,
+        8: Image.Transpose.ROTATE_90,
+    }
+    return (
+        image.transpose(operations[int(orientation)]) if int(orientation or 1) in operations else image.copy()
+    )
 
 
 def decode(path, metadata):
@@ -87,7 +120,9 @@ def decode(path, metadata):
             image = Image.fromarray(raw.postprocess(half_size=True, use_camera_wb=True))
         return image.convert("RGB"), "developed RAW (LibRaw half-size)"
     except ImportError as exc:
-        raise ValueError("No embedded JPEG available. Install ExifTool or optional rawpy RAW fallback.") from exc
+        raise ValueError(
+            "No embedded JPEG available. Install ExifTool or optional rawpy RAW fallback."
+        ) from exc
     except Exception as exc:
         raise ValueError(f"Unsupported/corrupt NEF or RAW compression: {exc}") from exc
 
