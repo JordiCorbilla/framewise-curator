@@ -180,8 +180,9 @@ def library_info(db, lib):
 def job_info(job):
     progress = dict(job.progress)
     if "elapsed" in progress:
-        progress["speed"] = round((progress.get("processed", 0) - progress.get("reused", 0)) /
-                                  max(progress["elapsed"], 0.1), 2)
+        progress["speed"] = round(
+            (progress.get("processed", 0) - progress.get("reused", 0)) / max(progress["elapsed"], 0.1), 2
+        )
     return {"id": job.id, "library_id": job.library_id, "status": job.status, **progress}
 
 

@@ -24,6 +24,7 @@ class ScanManager:
         with self.lock, Session.begin() as db:
             if db.query(ScanJob).filter(ScanJob.status.in_(ACTIVE)).first():
                 raise ValueError("A scan is already active. Cancel it or wait for completion.")
+            analyzer.retry_failed()
             job = ScanJob(library_id=library_id, progress={"stage": "queued"})
             db.add(job)
             db.flush()

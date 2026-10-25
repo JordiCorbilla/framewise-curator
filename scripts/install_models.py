@@ -25,12 +25,9 @@ def main():
 
     cfg = open_clip.get_pretrained_cfg("ViT-B-32", "openai")
     encoder_url = cfg["url"]
-    # Pin the LAION checkpoint to the repository commit returned by GitHub, recorded in the manifest.
-    req = urllib.request.Request(
-        "https://api.github.com/repos/LAION-AI/aesthetic-predictor/commits/main",
-        headers={"User-Agent": "Framewise-model-installer"},
-    )
-    commit = json.load(urllib.request.urlopen(req, timeout=60))["sha"]
+    # Exact baseline validated against OpenAI CLIP embeddings; never follow a moving branch.
+    commit = "6d122adad522ab246644d9dc1c6d7a3810ee255f"
+    head_sha256 = "c7b14cead230694acc7b9447974d3cad78003c72da032e402a303b6c2429e85f"
     urls = {
         "clip.pt": encoder_url,
         "aesthetic.pth": f"https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/{commit}/sa_0_4_vit_b_32_linear.pth",
@@ -45,6 +42,9 @@ def main():
         if name == "clip.pt" and digest != encoder_url.split("/")[-2]:
             temporary.unlink()
             raise ValueError("OpenAI CLIP checksum verification failed")
+        if name == "aesthetic.pth" and digest != head_sha256:
+            temporary.unlink()
+            raise ValueError("LAION aesthetic predictor checksum verification failed")
         temporary.replace(destination)
         digests[name] = digest
     manifest = {

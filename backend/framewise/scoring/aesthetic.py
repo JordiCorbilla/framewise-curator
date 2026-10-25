@@ -21,6 +21,7 @@ class AestheticAnalyzer:
         self.transform = None
         self.error = None
         self.loading = False
+        self.loaded_id = None
 
     def status(self):
         paths = [MODELS / "clip.pt", MODELS / "aesthetic.pth", MODELS / "manifest.json"]
@@ -59,7 +60,8 @@ class AestheticAnalyzer:
         )
 
     def load(self):
-        if self.model is not None:
+        current_id = self.model_id()
+        if self.model is not None and self.loaded_id == current_id:
             return
         self.loading = True
         try:
@@ -85,11 +87,18 @@ class AestheticAnalyzer:
             head = torch.nn.Linear(512, 1)
             head.load_state_dict(torch.load(MODELS / "aesthetic.pth", map_location="cpu", weights_only=True))
             self.model, self.head, self.transform = model.eval(), head.eval(), transform
+            self.loaded_id = current_id
         except Exception as exc:
             self.error = str(exc)
             raise
         finally:
             self.loading = False
+
+    def retry_failed(self):
+        if self.error:
+            self.error = None
+            self.model, self.head, self.transform = None, None, None
+            self.loaded_id = None
 
     def analyze_batch(self, images):
         if self.status()["status"] not in ("ready", "loading"):
