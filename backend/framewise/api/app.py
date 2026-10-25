@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -147,6 +148,9 @@ def library_info(db, lib):
     )
     latest = db.query(ScanJob).filter_by(library_id=lib.id).order_by(ScanJob.created.desc()).first()
     selected = photo_query(db, lib.id).filter(selected_expression()).count()
+    averages = photo_query(db, lib.id).filter(selected_expression()).with_entities(
+        func.avg(PhotoMetrics.aesthetic), func.avg(PhotoMetrics.calibrated["sharpness"].as_float()),
+        func.avg(PhotoMetrics.calibrated["exposure"].as_float())).one()
     cover = db.query(Photo).filter_by(library_id=lib.id, status="ready").order_by(Photo.score.desc()).first()
     return {
         "id": lib.id,
@@ -159,6 +163,7 @@ def library_info(db, lib):
         "ready": counts.get("ready", 0),
         "failed": counts.get("failed", 0),
         "selected": selected,
+        "summary": {"aesthetic": averages[0], "sharpness": averages[1], "exposure": averages[2]},
         "cover": f"/api/photos/{cover.id}/preview" if cover else None,
         "job": job_info(latest) if latest else None,
     }
@@ -172,6 +177,7 @@ def job_info(job):
 def health():
     return {
         "status": "ok",
+        "process_id": os.getpid(),
         "data_directory": str(DATA),
         "exiftool": exiftool_path(),
         "model": analyzer.status(),
@@ -190,7 +196,9 @@ def create_library(body: LibraryCreate):
     if not source.is_dir():
         raise HTTPException(422, "Folder does not exist or is not accessible")
     # Cache must never become part of the input collection.
-    if source == DATA or source in DATA.parents or DATA in source.parents:
+    if source != DATA / "demo-generated" and (
+        source == DATA or source in DATA.parents or DATA in source.parents
+    ):
         raise HTTPException(422, "Choose a source folder outside Framewise application data")
     with Session.begin() as db:
         existing = db.query(Library).filter_by(source=str(source)).first()
@@ -287,7 +295,9 @@ def photos(
                     Photo.recommendation == "review",
                 ),
             ),
-            "low": or_(PhotoDecision.decision == "reject", Photo.recommendation == "low"),
+            "low": or_(PhotoDecision.decision == "reject", and_(
+                or_(PhotoDecision.decision.is_(None), PhotoDecision.decision == "auto"),
+                Photo.recommendation == "low")),
             "similar": Photo.group_id.is_not(None),
             "failed": Photo.status != "ready",
         }

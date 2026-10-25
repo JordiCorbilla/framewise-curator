@@ -8,7 +8,7 @@ from pathlib import Path
 
 def inventory(source):
     records = {}
-    for n, path in enumerate(sorted(source.rglob("*"))):
+    for path in sorted(source.rglob("*")):
         if path.is_file():
             stat = path.stat()
             with path.open("rb") as stream:

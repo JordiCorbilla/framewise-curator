@@ -75,12 +75,20 @@ class ScanManager:
                 job = db.get(ScanJob, job_id)
                 library = db.get(Library, job.library_id)
             root = Path(library.source)
+            if not root.is_dir():
+                raise ValueError("Source folder is unavailable. Reconnect the drive and resume the scan.")
             files = sorted(discover(root, library.config.get("recursive", True)))
             progress["total"] = len(files)
             model_id = analyzer.model_id() if analyzer.status()["status"] == "ready" else "classical-only-v1"
             work = []
             with Session.begin() as db:
                 db.add(ModelRun(job_id=job_id, model_id=model_id, config=library.config))
+                discovered = {str(path.relative_to(root)).casefold() for path in files}
+                for existing in db.query(Photo).filter_by(library_id=library.id):
+                    if existing.relative_path.casefold() not in discovered:
+                        existing.status = "missing"
+                        existing.error = "Source file no longer present; manual decisions are retained."
+                        existing.recommendation = "unprocessed"
                 for path in files:
                     relative = str(path.relative_to(root))
                     photo_id = str(uuid.uuid5(uuid.UUID(library.id), relative.casefold()))
