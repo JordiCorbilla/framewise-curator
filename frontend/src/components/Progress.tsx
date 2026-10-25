@@ -1,0 +1,104 @@
+import { Loader2, Pause, Play, CheckCircle2, AlertCircle } from "lucide-react";
+import type { Job } from "../types";
+import { Button } from "./ui/button";
+// eslint-disable-next-line react-refresh/only-export-components
+export const active = (job?: Job | null) =>
+  !!job && ["running", "queued", "cancelling"].includes(job.status);
+export function Progress({
+  job,
+  cancel,
+  resume,
+  pending,
+}: {
+  job: Job;
+  cancel: () => void;
+  resume: () => void;
+  pending: boolean;
+}) {
+  const running = active(job);
+  return (
+    <section
+      className="progress-panel"
+      aria-label="Scan progress"
+      aria-live="polite"
+    >
+      <div className="progress-heading">
+        <div className="flex items-center gap-3">
+          {running ? (
+            <Loader2 className="animate-spin sage" size={18} />
+          ) : job.status === "complete" ? (
+            <CheckCircle2 className="sage" size={18} />
+          ) : (
+            <AlertCircle size={18} />
+          )}
+          <div>
+            <strong>
+              {running
+                ? "Discovering your best frames"
+                : job.status === "complete"
+                  ? "Your first pass is ready"
+                  : `Scan ${job.status}`}
+            </strong>
+            <p>
+              {job.stage} {job.current ? `· ${job.current}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="progress-percent">{job.percent ?? 0}%</span>
+          {running ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={cancel}
+              disabled={pending || job.status === "cancelling"}
+            >
+              <Pause size={13} />
+              Pause scan
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resume}
+              disabled={pending}
+            >
+              <Play size={13} />
+              {job.status === "complete" ? "Check for changes" : "Resume scan"}
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="progress-track">
+        <div style={{ width: `${job.percent ?? 0}%` }} />
+      </div>
+      <div className="progress-stats">
+        <span>
+          <b>{job.total ?? 0}</b> discovered
+        </span>
+        <span>
+          <b>{job.indexed ?? 0}</b> indexed
+        </span>
+        <span>
+          <b>{job.thumbnails ?? 0}</b> previews
+        </span>
+        <span>
+          <b>{job.scored ?? 0}</b> AI scored
+        </span>
+        <span>
+          <b>{job.reused ?? 0}</b> cached
+        </span>
+        <span>
+          <b>{job.failed ?? 0}</b> failed
+        </span>
+        <span className="ml-auto">
+          {job.speed ?? 0} photos/s · {Math.floor((job.elapsed ?? 0) / 60)}m{" "}
+          {Math.floor((job.elapsed ?? 0) % 60)}s
+        </span>
+      </div>
+      {(job.error || job.ai_error) && (
+        <p className="error">{job.error || job.ai_error}</p>
+      )}
+    </section>
+  );
+}
