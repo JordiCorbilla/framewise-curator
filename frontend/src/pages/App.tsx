@@ -27,8 +27,9 @@ export function App() {
   const scan = useMutation({ mutationFn: (id: string) => api(`/libraries/${id}/scan`, 'POST', {}), onSuccess: () => { refresh(); setPage('Curate') }, onError: e => setError(e.message) })
   const cancel = useMutation({ mutationFn: (id: string) => api(`/jobs/${id}/cancel`, 'POST', {}), onSuccess: refresh, onError: e => setError(e.message) })
   const jobId = library?.job?.id
+  const jobIsActive = active(library?.job)
   useEffect(() => {
-    if (!jobId || !active(library?.job)) return
+    if (!jobId || !jobIsActive) return
     const events = new EventSource(`/api/jobs/${jobId}/events`)
     let updated = 0
     events.onmessage = event => {
@@ -38,7 +39,7 @@ export function App() {
       if (!active(job)) events.close()
     }
     return () => events.close()
-  }, [jobId, library?.job?.status, client])
+  }, [jobId, jobIsActive, client])
   const choose = (lib: Library) => { setLibraryId(lib.id); setPage('Curate'); setViewer(null) }
   return <div className="app-shell"><aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); setPage('Library') }}><Aperture size={27} strokeWidth={1.5}/><span>framewise<span className="brand-dot">.</span></span></a><div className="sidebar-label">YOUR WORKSPACE</div><nav aria-label="Main navigation">{navigation.map(item => <button key={item.label} className={page === item.label ? 'active' : ''} onClick={() => { setPage(item.label); setViewer(null) }}><item.icon size={17} strokeWidth={1.6}/><span>{item.label}</span>{item.label === 'Selected' && !!library?.selected && <b>{library.selected}</b>}</button>)}</nav><div className="sidebar-collections"><div className="sidebar-label">COLLECTIONS<button onClick={() => setPage('Scan')} aria-label="New collection"><Plus size={14}/></button></div>{libraries.data?.map(lib => <button key={lib.id} className={lib.id === library?.id ? 'current' : ''} onClick={() => choose(lib)}><Folder size={14}/><span>{lib.name}</span><small>{lib.total}</small></button>)}</div><div className="sidebar-bottom"><div className="local-badge"><span className="status-dot"/>LOCAL WORKSPACE</div><p><LockKeyhole size={12}/>Your photographs stay here.</p><div className="model-small"><span className={`status-dot ${model.data?.status !== 'ready' ? 'muted' : ''}`}/>{model.data?.status === 'ready' ? 'Aesthetic model ready · CPU' : model.data?.status === 'loading' ? 'Loading aesthetic model…' : 'Classical analysis available'}</div><span className="version">FRAMEWISE / 0.1</span></div></aside>
     <div className="workspace"><header className="topbar"><div><span>Workspace</span><ChevronRight size={13}/><b>{page}</b>{library && page !== 'Library' && <><ChevronRight size={13}/><span className="breadcrumb-name">{library.name}</span></>}</div><span className="topbar-private"><ShieldCheck size={14}/>Private by design</span></header>

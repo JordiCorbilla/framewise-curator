@@ -56,8 +56,10 @@ def read_metadata(path):
                 "-ExposureCompensation",
                 "-ImageWidth",
                 "-ImageHeight",
-                str(path),
+                "-@",
+                "-",
             ],
+            input=argument_path(path),
             capture_output=True,
             timeout=40,
             check=True,
@@ -101,7 +103,12 @@ def decode(path, metadata):
     candidates = []
     if tool:
         for tag in ("JpgFromRaw", "PreviewImage", "OtherImage"):
-            result = subprocess.run([tool, "-b", f"-{tag}", str(path)], capture_output=True, timeout=60)
+            result = subprocess.run(
+                [tool, "-charset", "filename=UTF8", "-b", f"-{tag}", "-@", "-"],
+                input=argument_path(path),
+                capture_output=True,
+                timeout=60,
+            )
             if result.returncode == 0 and result.stdout:
                 try:
                     with Image.open(io.BytesIO(result.stdout)) as im:
@@ -144,3 +151,11 @@ def acquire(path, library_id, photo_id):
     small.thumbnail((560, 560), Image.Resampling.LANCZOS)
     small.save(thumb, "JPEG", quality=83)
     return image, metadata, provenance, width, height
+
+
+def argument_path(path):
+    # UTF-8 argument files bypass the Windows Perl ANSI command-line conversion.
+    value = str(path.resolve())
+    if "\n" in value or "\r" in value:
+        raise ValueError("Unsupported newline in filename")
+    return (value + "\n").encode("utf-8")

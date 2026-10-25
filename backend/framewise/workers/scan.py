@@ -160,7 +160,7 @@ class ScanManager:
                                     model_id=model_id if aesthetic is not None else None,
                                 )
                             )
-                            # If inference failed, a resume must retry rather than cache the missing output as scored.
+                            # Retry missing inference on resume, rather than caching it as scored.
                             if aesthetic is None and model_id != "classical-only-v1":
                                 photo.identity = identity(source_path(root, relative), "classical-only-v1")
                             progress["thumbnails"] += 1

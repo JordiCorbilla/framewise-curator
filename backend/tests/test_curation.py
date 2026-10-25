@@ -1,6 +1,6 @@
+from conftest import create_scanned
 from PIL import ImageFilter
 
-from conftest import create_scanned
 from framewise.curation.ranking import combined_score, recommend
 from framewise.db.models import Library, Photo, PhotoMetadata, PhotoMetrics, Session, SimilarityGroup
 from framewise.scoring.metrics import classical
@@ -15,8 +15,12 @@ def test_deterministic_metrics_and_blur(image):
 
 
 def test_missing_model_is_not_fake_aesthetic():
-    assert combined_score({"sharpness": 80, "exposure": 40}, None,
-                          {"aesthetic": .6, "sharpness": .25, "exposure": .15}) == 65
+    assert (
+        combined_score(
+            {"sharpness": 80, "exposure": 40}, None, {"aesthetic": 0.6, "sharpness": 0.25, "exposure": 0.15}
+        )
+        == 65
+    )
 
 
 def test_ranking_stability_and_duplicates(source):

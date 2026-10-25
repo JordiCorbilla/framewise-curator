@@ -25,7 +25,9 @@ def test_path_escape_rejected(source):
 def test_exiftool_metadata(monkeypatch, tmp_path):
     monkeypatch.setattr(acq, "exiftool_path", lambda: "exiftool")
     data = {"Orientation": 6, "DateTimeOriginal": "2026:10:18 11:12:13", "Model": "NIKON"}
-    monkeypatch.setattr(acq.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=json.dumps([data]).encode()))
+    monkeypatch.setattr(
+        acq.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=json.dumps([data]).encode())
+    )
     assert acq.read_metadata(tmp_path / "camera.nef") == data
 
 
@@ -41,13 +43,16 @@ def test_exif_pillow_orientation(monkeypatch, tmp_path, image):
     assert provenance == "original raster"
 
 
-@pytest.mark.parametrize("orientation,size", [(1,(360,240)),(3,(360,240)),(6,(240,360)),(8,(240,360))])
+@pytest.mark.parametrize(
+    "orientation,size", [(1, (360, 240)), (3, (360, 240)), (6, (240, 360)), (8, (240, 360))]
+)
 def test_orientation(image, orientation, size):
     assert acq.orient(image, orientation).size == size
 
 
 def test_embedded_preview_largest_and_fallback(monkeypatch, tmp_path, image):
     monkeypatch.setattr(acq, "exiftool_path", lambda: "exiftool")
+
     def result(args, **kwargs):
         buffer = io.BytesIO()
         if "-JpgFromRaw" in args:
@@ -55,6 +60,7 @@ def test_embedded_preview_largest_and_fallback(monkeypatch, tmp_path, image):
         candidate = image if "-PreviewImage" in args else image.resize((60, 40))
         candidate.save(buffer, "JPEG")
         return SimpleNamespace(returncode=0, stdout=buffer.getvalue())
+
     monkeypatch.setattr(acq.subprocess, "run", result)
     decoded, provenance = acq.decode(tmp_path / "test.nef", {"Orientation": 6})
     assert decoded.size == (240, 360)
@@ -63,11 +69,19 @@ def test_embedded_preview_largest_and_fallback(monkeypatch, tmp_path, image):
 
 def test_rawpy_fallback(monkeypatch, tmp_path):
     import numpy as np
+
     monkeypatch.setattr(acq, "exiftool_path", lambda: None)
+
     class Raw:
-        def __enter__(self): return self
-        def __exit__(self, *args): pass
-        def postprocess(self, **kwargs): return np.zeros((40, 60, 3), dtype=np.uint8)
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def postprocess(self, **kwargs):
+            return np.zeros((40, 60, 3), dtype=np.uint8)
+
     monkeypatch.setitem(sys.modules, "rawpy", SimpleNamespace(imread=lambda p: Raw()))
     im, provenance = acq.decode(tmp_path / "test.nef", {})
     assert im.size == (60, 40)

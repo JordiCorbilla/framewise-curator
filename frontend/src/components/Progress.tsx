@@ -1,6 +1,7 @@
 import { Loader2, Pause, Play, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { Job } from '../types'
 import { Button } from './ui/button'
+// eslint-disable-next-line react-refresh/only-export-components
 export const active = (job?: Job | null) => !!job && ['running','queued','cancelling'].includes(job.status)
 export function Progress({ job, cancel, resume, pending }: { job: Job; cancel: () => void; resume: () => void; pending: boolean }) {
   const running = active(job)

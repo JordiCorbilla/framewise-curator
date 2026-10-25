@@ -68,13 +68,20 @@ class AestheticAnalyzer:
 
             manifest = json.loads((MODELS / "manifest.json").read_text())
             for filename in ("clip.pt", "aesthetic.pth"):
-                digest = hashlib.file_digest((MODELS / filename).open("rb"), "sha256").hexdigest()
+                with (MODELS / filename).open("rb") as stream:
+                    digest = hashlib.file_digest(stream, "sha256").hexdigest()
                 if digest != manifest["sha256"][filename]:
                     raise ValueError(f"Model checksum mismatch: {filename}")
             torch.set_num_threads(min(4, torch.get_num_threads()))
             model, _, transform = open_clip.create_model_and_transforms(
-                "ViT-B-32", pretrained=str(MODELS / "clip.pt"), device="cpu", force_quick_gelu=True
+                "ViT-B-32", pretrained=None, device="cpu", force_quick_gelu=True
             )
+            # OpenAI distributes a TorchScript archive, not a torch.load(weights_only=True) file.
+            # Only load the checksum-verified local archive; no code path here can download weights.
+            state = torch.jit.load(str(MODELS / "clip.pt"), map_location="cpu").state_dict()
+            for key in ("input_resolution", "context_length", "vocab_size"):
+                state.pop(key, None)
+            model.load_state_dict(state, strict=True)
             head = torch.nn.Linear(512, 1)
             head.load_state_dict(torch.load(MODELS / "aesthetic.pth", map_location="cpu", weights_only=True))
             self.model, self.head, self.transform = model.eval(), head.eval(), transform
