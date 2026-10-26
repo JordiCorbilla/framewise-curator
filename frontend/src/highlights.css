@@ -84,7 +84,7 @@
   margin: 25px 0 20px;
 }
 .highlight-section-title h2 {
-  font-family: Georgia, serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   font-size: 23px;
   font-weight: 400;
   letter-spacing: -0.3px;
@@ -177,8 +177,8 @@
 }
 .podium-filename > strong {
   font:
-    25px Georgia,
-    serif;
+    25px "Inter Variable",
+    sans-serif;
   white-space: nowrap;
 }
 .podium-filename small {
@@ -487,8 +487,8 @@
 }
 .highlights-waiting h2 {
   font:
-    26px Georgia,
-    serif;
+    26px "Inter Variable",
+    sans-serif;
   color: #cbd6c0;
 }
 .highlights-waiting p {

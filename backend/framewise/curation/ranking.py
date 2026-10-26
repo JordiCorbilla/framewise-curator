@@ -3,7 +3,15 @@ import uuid
 from datetime import datetime
 
 from framewise.core.config import DEFAULT_WEIGHTS
-from framewise.db.models import Photo, PhotoMetadata, PhotoMetrics, SimilarityGroup
+from framewise.curation.taste import BLEND, affinity, vector_for
+from framewise.db.models import (
+    Photo,
+    PhotoEmbedding,
+    PhotoMetadata,
+    PhotoMetrics,
+    SimilarityGroup,
+    TasteProfile,
+)
 
 
 def timestamp(metadata):
@@ -86,8 +94,24 @@ def recommend(db, library, group=True):
         .all()
     )
     weights = library.config.get("weights", DEFAULT_WEIGHTS)
+    profile = db.get(TasteProfile, "local")
+    embeddings = (
+        {
+            e.photo_id: e
+            for e in db.query(PhotoEmbedding)
+            .join(Photo, Photo.id == PhotoEmbedding.photo_id)
+            .filter(Photo.library_id == library.id)
+        }
+        if profile and profile.enabled
+        else {}
+    )
     for photo, metrics in rows:
         photo.score = combined_score(metrics.calibrated, metrics.aesthetic, weights)
+        taste = affinity(
+            profile, vector_for(embeddings.get(photo.id), photo, metrics.model_id), metrics.model_id
+        )
+        if taste is not None:
+            photo.score = round((1 - BLEND) * photo.score + BLEND * taste, 3)
     db.flush()
     if group:
         regroup(db, library.id)

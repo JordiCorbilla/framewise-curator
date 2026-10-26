@@ -28,6 +28,7 @@ import { ScanForm } from "./Scan";
 import { Export } from "./Export";
 import { Settings } from "./Settings";
 import { Highlights } from "./Highlights";
+import { CollectionManager } from "../components/CollectionManager";
 import { api } from "../services/api";
 import type { Job, Library, ModelStatus, Photo } from "../types";
 type Page =
@@ -145,7 +146,13 @@ export function App() {
             setPage("Library");
           }}
         >
-          <Aperture size={27} strokeWidth={1.5} />
+          <img
+            className="brand-icon"
+            src="/icon.svg"
+            width="30"
+            height="30"
+            alt=""
+          />
           <span>
             framewise<span className="brand-dot">.</span>
           </span>
@@ -294,53 +301,65 @@ export function App() {
               ) : (
                 <div className="collection-grid">
                   {libraries.data.map((lib) => (
-                    <button
-                      key={lib.id}
-                      className="collection-card"
-                      onClick={() => choose(lib)}
-                    >
-                      <div className="collection-cover">
-                        {lib.cover ? (
-                          <img
-                            src={lib.cover}
-                            alt={`Best-ranked frame in ${lib.name}`}
-                          />
-                        ) : (
-                          <Aperture size={44} />
-                        )}
-                        <span className="collection-status">
-                          {active(lib.job)
-                            ? "Processing"
-                            : lib.job?.status === "complete"
-                              ? "Ready to curate"
-                              : "Open collection"}
-                        </span>
-                      </div>
-                      <div className="collection-info">
-                        <div>
-                          <h3>{lib.name}</h3>
-                          <p>
-                            {lib.total} photographs <span>·</span>{" "}
-                            {lib.selected} selected
-                          </p>
+                    <article key={lib.id} className="collection-wrapper">
+                      <button
+                        key={lib.id}
+                        className="collection-card"
+                        onClick={() => choose(lib)}
+                      >
+                        <div className="collection-cover">
+                          {lib.cover ? (
+                            <img
+                              src={lib.cover}
+                              alt={`Best-ranked frame in ${lib.name}`}
+                            />
+                          ) : (
+                            <Aperture size={44} />
+                          )}
+                          <span className="collection-status">
+                            {active(lib.job)
+                              ? "Processing"
+                              : lib.job?.status === "complete"
+                                ? "Ready to curate"
+                                : "Open collection"}
+                          </span>
                         </div>
-                        <ArrowRight size={18} />
-                      </div>
-                      <div className="collection-footer">
-                        <span>
-                          {new Date(lib.created).toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>
-                          {lib.config.recursive
-                            ? "Recursive scan"
-                            : "Single folder"}
-                        </span>
-                      </div>
-                    </button>
+                        <div className="collection-info">
+                          <div>
+                            <h3>{lib.name}</h3>
+                            <p>
+                              {lib.total} photographs <span>·</span>{" "}
+                              {lib.selected} selected
+                            </p>
+                          </div>
+                          <ArrowRight size={18} />
+                        </div>
+                        <div className="collection-footer">
+                          <span>
+                            {new Date(lib.created).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                          <span>
+                            {lib.config.recursive
+                              ? "Recursive scan"
+                              : "Single folder"}
+                          </span>
+                        </div>
+                      </button>
+                      <CollectionManager
+                        library={lib}
+                        refresh={refresh}
+                        removed={() => {
+                          if (library?.id === lib.id) {
+                            setLibraryId("");
+                            setViewer(null);
+                          }
+                        }}
+                      />
+                    </article>
                   ))}
                 </div>
               )}

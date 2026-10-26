@@ -12,6 +12,7 @@ from sqlalchemy import and_, case, or_
 from sqlalchemy.dialects.sqlite import insert
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from framewise.api.collections import router as collections_router
 from framewise.api.highlights import router as highlights_router
 from framewise.api.presenters import (
     job_info,
@@ -22,6 +23,7 @@ from framewise.api.presenters import (
     serialize,
 )
 from framewise.api.schemas import BudgetUpdate, DecisionUpdate, LibraryCreate, WeightUpdate
+from framewise.api.taste import router as taste_router
 from framewise.core.config import DATA, DEFAULT_WEIGHTS, exiftool_path
 from framewise.curation.highlights import rebuild
 from framewise.curation.ranking import recommend
@@ -59,7 +61,7 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGINS,
-    allow_methods=["GET", "POST", "PATCH", "PUT"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
     allow_headers=["Content-Type"],
 )
 
@@ -388,6 +390,8 @@ def xmp_confirm(library_id: str):
 
 
 app.include_router(highlights_router)
+app.include_router(collections_router)
+app.include_router(taste_router)
 
 frontend = Path(__file__).resolve().parents[3] / "frontend" / "dist"
 if frontend.is_dir():

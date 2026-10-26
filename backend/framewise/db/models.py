@@ -164,6 +164,21 @@ class HighlightFeedback(Base):
     created: Mapped[str] = mapped_column(default=now)
 
 
+class TasteLabel(Base):
+    __tablename__ = "taste_labels"
+    photo_id: Mapped[str] = mapped_column(ForeignKey("photos.id"), primary_key=True)
+    value: Mapped[int]
+    updated: Mapped[str] = mapped_column(default=now)
+
+
+class TasteProfile(Base):
+    __tablename__ = "taste_profiles"
+    id: Mapped[str] = mapped_column(primary_key=True, default="local")
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    enabled: Mapped[bool] = mapped_column(default=False)
+    updated: Mapped[str] = mapped_column(default=now)
+
+
 engine = create_engine(f"sqlite:///{DATA / 'framewise.sqlite3'}", connect_args={"check_same_thread": False})
 
 
@@ -184,6 +199,11 @@ def initialize():
             job.status = "interrupted"
         db.flush()
         from framewise.curation.highlights import rebuild
+        from framewise.curation.ranking import recommend
+        from framewise.curation.taste import ensure_current
 
+        stale = ensure_current(db)
         for library in db.query(Library):
+            if stale:
+                recommend(db, library)
             rebuild(db, library)

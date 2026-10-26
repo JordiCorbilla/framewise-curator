@@ -37,6 +37,9 @@ FIELDS = [
     "raw_mapping",
     "embedding_provenance",
     "exactly_three_override",
+    "generic_portfolio_score",
+    "taste_affinity",
+    "taste_profile_version",
 ]
 
 
@@ -99,6 +102,9 @@ def make_csv(photos, category=None):
                         ),
                         highlight.get("embedding_provenance"),
                         highlight.get("forced_inclusion", False),
+                        highlight.get("generic_score"),
+                        p.get("taste_affinity"),
+                        p.get("taste_version"),
                     ],
                     strict=True,
                 )
