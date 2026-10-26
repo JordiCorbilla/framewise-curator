@@ -18,7 +18,7 @@
 }
 .selection-summary strong {
   font-size: 26px;
-  font-family: Georgia, serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   font-weight: 400;
   color: #d5dfcc;
 }
@@ -37,7 +37,7 @@
   margin-left: auto;
 }
 :root {
-  font-family: Inter, "Segoe UI", sans-serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   color: #dedfd9;
   background: #111312;
   font-synthesis: none;
@@ -312,7 +312,7 @@ main {
   margin-bottom: 46px;
 }
 h1 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   font-size: clamp(30px, 3.3vw, 49px);
   font-weight: 400;
   letter-spacing: -1.5px;
@@ -408,7 +408,7 @@ h1 em {
 }
 .collection-info h3 {
   font-size: 18px;
-  font-family: Georgia, serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   font-weight: 400;
 }
 .collection-info p {
@@ -483,8 +483,8 @@ h1 em {
 }
 .welcome-empty h2 {
   font:
-    26px Georgia,
-    serif;
+    26px "Inter Variable",
+    sans-serif;
 }
 .welcome-empty p {
   font-size: 12px;
@@ -504,8 +504,8 @@ h1 em {
 }
 .empty h2 {
   font:
-    22px Georgia,
-    serif;
+    22px "Inter Variable",
+    sans-serif;
   color: #c8d1bf;
 }
 .empty p {
@@ -534,8 +534,8 @@ h1 em {
 }
 .scan-form h2 {
   font:
-    25px Georgia,
-    serif;
+    25px "Inter Variable",
+    sans-serif;
 }
 .scan-form > p {
   color: #939f89;
@@ -1036,8 +1036,8 @@ input[type="checkbox"] {
 }
 .lightroom-guide h2 {
   font:
-    28px Georgia,
-    serif;
+    28px "Inter Variable",
+    sans-serif;
   margin-top: 18px;
 }
 .lightroom-guide ol {
@@ -1296,7 +1296,7 @@ input[type="checkbox"] {
 }
 .detail-score {
   font-size: 47px;
-  font-family: Georgia, serif;
+  font-family: "Inter Variable", "Segoe UI", sans-serif;
   letter-spacing: -1px;
   margin: 15px 0 5px;
 }

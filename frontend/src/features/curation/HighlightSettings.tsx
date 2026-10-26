@@ -86,6 +86,30 @@ export function HighlightSettings({
           repeated votes for correlated metrics. Weights are normalised over
           available signals.
         </p>
+        <div className="form-actions">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              setDraft({
+                ...draft,
+                aesthetic_floor: 7.5,
+                technical_floor: 55,
+                flickr_aesthetic_floor: 7.5,
+                flickr_percentile: 95,
+                flickr_max: 6,
+                force_three: false,
+              })
+            }
+          >
+            Use stricter floors
+          </Button>
+          <span className="footnote">
+            Review the values below, then Save. Fewer than three finalists is
+            allowed.
+          </span>
+        </div>
         <div className="highlight-config-grid">
           {fields.map((f) => (
             <label key={f.key}>

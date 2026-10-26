@@ -20,7 +20,8 @@ evaluation of aesthetic ranking accuracy. XMP writes and richer intelligence rem
 - Browser review exercised progressive gallery updates, pause, real NEF resumption, lightbox,
   P/X/U/1–5/arrow/Escape shortcuts, enlarged preview, related frames, final selection and export controls.
   Responsive inspection includes a 390px embedded viewport and a 1440px desktop viewport; compact
-  navigation has explicit accessible names. Photographs are never embedded in this repository.
+  navigation has explicit accessible names. Personal photographs are never embedded in this repository;
+  the later showcase uses labelled project-owned procedural illustrations only.
 
 ## Real source and model evidence
 

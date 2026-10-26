@@ -16,6 +16,7 @@ from framewise.db.models import (
     PhotoMetrics,
     ScanJob,
     SimilarityGroup,
+    TasteProfile,
     now,
 )
 from framewise.imaging.raw_pairs import associate
@@ -50,6 +51,10 @@ def rebuild(db, library):
         waiting(db, library.id)
         return state
     cfg = {**DEFAULT_CONFIG, **state.config}
+    from framewise.curation.taste import affinity
+
+    profile = db.get(TasteProfile, "local")
+    cfg["taste_version"] = profile.data.get("version") if profile and profile.enabled else None
     raw_sources = associate(db, library.id)
     config_id = hashlib.sha256(json.dumps({"version": VERSION, **cfg}, sort_keys=True).encode()).hexdigest()[
         :16
@@ -93,7 +98,11 @@ def rebuild(db, library):
                 focus=metrics.calibrated.get("focus_risk", ""),
                 protected=group.protected if group else False,
                 raw_capture=raw_sources.get(p.id, p.id),
-                data={"embedding_provenance": embedding.provenance if vector is not None else None},
+                data={
+                    "embedding_provenance": embedding.provenance if vector is not None else None,
+                    "taste_affinity": affinity(profile, vector, metrics.model_id),
+                    "taste_version": cfg["taste_version"],
+                },
             )
         )
     results, summary = rank(frames, cfg)

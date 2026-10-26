@@ -136,6 +136,12 @@ def rank(frames, config=None):
         if has_embedding:
             numerator += cfg["distinctiveness_weight"] * novelty_pct[i]
         score = float(numerator / weight) if weight else 0
+        generic_score = score
+        taste = f.data.get("taste_affinity")
+        if taste is not None:
+            from framewise.curation.taste import BLEND
+
+            score = (1 - BLEND) * score + BLEND * taste
         viable = (
             f.aesthetic is not None
             and f.aesthetic >= cfg["aesthetic_floor"]
@@ -148,6 +154,12 @@ def rank(frames, config=None):
             f"Technical proxy {technical[i]:.1f}/100",
         ]
         uncertainties = ["Relative heuristic score; no prediction of Flickr engagement or competition wins."]
+        if taste is not None:
+            strengths.append(f"Your local taste affinity {taste:.1f}/100 · 30% ranking blend")
+            uncertainties.append(
+                "Taste affinity is an experimental similarity signal, "
+                "not a calibrated likelihood you will like this photo."
+            )
         if has_embedding:
             strengths.append(f"Visual distance to nearby reference frames {novelty[i]:.3f} (CLIP cosine)")
             uncertainties.append(
@@ -171,6 +183,9 @@ def rank(frames, config=None):
             uncertainties.append("Protected/uncertain burst or bracket: inspect alternatives.")
         output[f.id] = {
             "score": round(score, 4),
+            "generic_score": round(generic_score, 4),
+            "taste_affinity": round(taste, 4) if taste is not None else None,
+            "taste_version": f.data.get("taste_version"),
             "technical": round(technical[i], 4),
             "aesthetic_percentile": round(float(aesthetics[i]), 3),
             "technical_percentile": round(float(technical_pct[i]), 3),

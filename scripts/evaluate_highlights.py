@@ -77,9 +77,12 @@ def main():
         ranking_configurations=sorted(
             {r["ranking_configuration_version"] for r in predictions}
         ),
+        taste_profile_versions=sorted(
+            {r.get("taste_profile_version", "") for r in predictions} - {""}
+        ),
         notice="Agreement with human favourites, not prediction of engagement or competition results. "
         "Precision uses actually recommended frames (up to three); null means undefined. "
-        "Keep historical evaluation trips held out when changing ranking weights.",
+        "Keep evaluation trips out of taste training and ranking-weight tuning.",
     )
     args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))

@@ -11,6 +11,7 @@ import {
 import type { Library, ModelStatus, Weights } from "../types";
 import { Button } from "../components/ui/button";
 import { api } from "../services/api";
+import { TasteSettings } from "../features/curation/TasteSettings";
 export function Settings({
   library,
   model,
@@ -32,6 +33,7 @@ export function Settings({
         </div>
       </div>
       <div className="settings-layout">
+        <TasteSettings />
         <section className="settings-section">
           <div className="settings-title">
             <Aperture size={20} />
@@ -113,9 +115,8 @@ export function Settings({
           </p>
           <p className="footnote">
             Two preview workers · batches of eight · 48 thumbnails per gallery
-            page. Preview cache removal is manual while the app is closed;
-            resuming regenerates missing previews. Never remove the SQLite
-            database if you want to retain your decisions.
+            page. Remove a collection from Library to permanently delete its app
+            records and preview cache. Original photographs remain untouched.
           </p>
         </section>
       </div>

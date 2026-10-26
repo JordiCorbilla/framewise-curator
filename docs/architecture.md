@@ -23,6 +23,12 @@ Tables: Library, ScanJob, Photo, PhotoMetadata, PhotoMetrics, ModelRun, Similari
 PhotoDecision, ExportJob. Photo IDs are UUID5 of library ID and case-folded relative filename;
 manual decisions have their own table and do not change when recommendations are regenerated.
 
+Highlights adds PhotoEmbedding, PhotoRawSource, HighlightState, HighlightRanking, HighlightDecision and
+HighlightFeedback. TasteLabel stores explicit preferences; TasteProfile stores the local centroid model,
+grouped split, measurements, fingerprint and opt-in status. No remote training service is involved.
+Changed feedback or training inputs invalidate the old profile. Collection removal verifies the cache
+path, rejects links/junctions and active scans, removes dependent records, and invalidates the global profile.
+
 ## Cache and resume
 
 Default Windows data: `%LOCALAPPDATA%\Framewise` (platformdirs on other OSes). Override with

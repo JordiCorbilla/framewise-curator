@@ -38,7 +38,10 @@ export function Budget({
         <SlidersHorizontal size={17} />
         <div>
           <strong>Selection budget</strong>
-          <p>A little more focus. Room for your judgement.</p>
+          <p>
+            Reduce the automatic shortlist. Your Keep/Exclude choices stay
+            protected.
+          </p>
         </div>
       </div>
       <div className="budget-slider">
@@ -64,6 +67,26 @@ export function Budget({
         )}
       </div>
       <span className="budget-hint">Manual decisions protected</span>
+      <div
+        className="selectivity-presets"
+        aria-label="Selection budget presets"
+      >
+        {[
+          { name: "Very selective", value: 5 },
+          { name: "Selective", value: 10 },
+          { name: "Balanced", value: 25 },
+        ].map((preset) => (
+          <button
+            key={preset.value}
+            disabled={update.isPending || active(library.job)}
+            aria-pressed={library.budget === preset.value}
+            onClick={() => update.mutate(preset.value)}
+          >
+            {preset.name} · {preset.value}%
+          </button>
+        ))}
+        <span>Budget limits quantity; use My taste to improve fit.</span>
+      </div>
     </section>
   );
 }

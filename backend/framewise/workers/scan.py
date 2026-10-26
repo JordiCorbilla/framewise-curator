@@ -256,6 +256,10 @@ class ScanManager:
             update("cancelled" if stop.is_set() else "complete")
             with Session.begin() as db:
                 rebuild(db, db.get(Library, library.id))
+                from framewise.curation.taste import ensure_current, rerank_all
+
+                if ensure_current(db):
+                    rerank_all(db)
         except Exception as exc:
             progress.update(stage="failed", error=f"{type(exc).__name__}: {exc}")
             update("failed")

@@ -61,6 +61,8 @@ export interface Photo {
   width: number;
   height: number;
   score: number | null;
+  taste_affinity?: number | null;
+  taste_version?: string | null;
   aesthetic: number | null;
   recommendation: string;
   decision: "auto" | "keep" | "reject" | "review";

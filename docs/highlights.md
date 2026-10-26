@@ -75,7 +75,9 @@ for the same capture, even when editing changes their perceptual hashes. Origina
 Additive SQLite tables hold embeddings, RAW associations, rankings, category decisions, finalist slots,
 configuration/version and append-only before/after feedback. Existing photo/metric/Lightroom-decision
 records are retained. Exceptional ranking waits until scanning finishes; interrupted/cancelled scans
-show an explicit waiting state. There is no preference-learning model trained from feedback in V1.
+show an explicit waiting state. A separate opt-in local preference learner now uses explicit My taste
+labels; category corrections remain potential feedback records rather than implicit training labels.
+See [personal preference controls](preferences.md) for the training gate, limits and reset behaviour.
 
 ## Lightroom exports
 

@@ -15,6 +15,7 @@ import { api } from "../services/api";
 import type { Photo, Photos } from "../types";
 import { Button } from "./ui/button";
 import { HighlightBadges } from "./HighlightBadges";
+import { TasteFeedback } from "./TasteFeedback";
 
 function Metric({
   name,
@@ -93,6 +94,17 @@ export function PhotoViewer({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement) return;
+      if (
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement
+      )
+        return;
+      if (
+        event.key === " " &&
+        event.target instanceof HTMLElement &&
+        event.target.closest("button,a,summary")
+      )
+        return;
       if (event.key === "Tab") {
         const focusable = panel.current?.querySelectorAll<HTMLElement>(
           'button:not(:disabled),a[href],[tabindex="0"]',
@@ -219,6 +231,7 @@ export function PhotoViewer({
             </span>
           </div>
           <aside className="viewer-details">
+            <TasteFeedback key={photo.id} photoId={photo.id} />
             <div className="eyebrow">FRAME ASSESSMENT</div>
             <HighlightBadges photo={photo} />
             <div className="detail-score">
@@ -238,6 +251,12 @@ export function PhotoViewer({
               value={photo.aesthetic}
               suffix="/10"
             />
+            {photo.taste_affinity != null && (
+              <Metric
+                name="Your taste affinity (experimental)"
+                value={photo.taste_affinity}
+              />
+            )}
             <Metric
               name="Sharpness / detail"
               value={photo.calibrated.sharpness}

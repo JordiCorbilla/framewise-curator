@@ -8,11 +8,13 @@ from framewise.db.models import (
     HighlightState,
     Photo,
     PhotoDecision,
+    PhotoEmbedding,
     PhotoMetadata,
     PhotoMetrics,
     PhotoRawSource,
     ScanJob,
     SimilarityGroup,
+    TasteProfile,
 )
 from framewise.imaging.acquisition import source_path
 
@@ -37,6 +39,8 @@ def photo_query(db, library_id):
             HighlightDecision,
             HighlightState,
             raw,
+            PhotoEmbedding,
+            TasteProfile,
         )
         .outerjoin(PhotoMetrics, PhotoMetrics.photo_id == Photo.id)
         .outerjoin(PhotoDecision, PhotoDecision.photo_id == Photo.id)
@@ -47,6 +51,8 @@ def photo_query(db, library_id):
         .outerjoin(HighlightState, HighlightState.library_id == Photo.library_id)
         .outerjoin(PhotoRawSource, PhotoRawSource.photo_id == Photo.id)
         .outerjoin(raw, raw.id == PhotoRawSource.raw_photo_id)
+        .outerjoin(PhotoEmbedding, PhotoEmbedding.photo_id == Photo.id)
+        .outerjoin(TasteProfile, TasteProfile.id == "local")
         .filter(Photo.library_id == library_id)
     )
 
@@ -65,7 +71,26 @@ def selected_expression():
 
 
 def serialize(row, source):
-    p, metrics, decision, metadata, group, highlight, highlight_manual, highlight_state, paired_raw = row
+    (
+        p,
+        metrics,
+        decision,
+        metadata,
+        group,
+        highlight,
+        highlight_manual,
+        highlight_state,
+        paired_raw,
+        embedding,
+        profile,
+    ) = row
+    from framewise.curation.taste import affinity, vector_for
+
+    taste = affinity(
+        profile,
+        vector_for(embedding, p, metrics.model_id if metrics else None),
+        metrics.model_id if metrics else None,
+    )
     raw = p if p.filename.lower().endswith(".nef") else paired_raw
     manual = decision.decision if decision else "auto"
     selected = p.status == "ready" and (manual == "keep" or (manual == "auto" and p.recommendation == "pick"))
@@ -76,7 +101,11 @@ def serialize(row, source):
     else:
         explanation.append("Aesthetic assessment unavailable; technical ranking only")
     if calibrated:
-        explanation.append(f"Detail {calibrated['sharpness']:.0f}/100; focus {calibrated['focus_risk']}")
+        explanation.append(
+            f"Detail {calibrated['sharpness']:.0f}/100; focus {calibrated.get('focus_risk', 'unknown')}"
+        )
+    if taste is not None:
+        explanation.append(f"Local taste affinity {taste:.1f}/100; experimental 30% blend")
     if group:
         explanation.append(f"Frame {p.group_rank} of {group.count}; {group.reason}")
     return {
@@ -94,6 +123,8 @@ def serialize(row, source):
         "width": p.width,
         "height": p.height,
         "score": p.score,
+        "taste_affinity": taste,
+        "taste_version": profile.data.get("version") if taste is not None else None,
         "recommendation": p.recommendation,
         "selection_rank": p.selection_rank,
         "aesthetic": metrics.aesthetic if metrics else None,
