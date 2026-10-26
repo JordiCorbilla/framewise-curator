@@ -67,6 +67,9 @@ export function App() {
   });
   const library =
     libraries.data?.find((l) => l.id === libraryId) ?? libraries.data?.[0];
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [page, library?.id]);
   const [viewer, setViewer] = useState<Photo | null>(null);
   const [galleryItems, setGalleryItems] = useState<Photo[]>([]);
   const [galleryFilter, setGalleryFilter] = useState<string | undefined>();
@@ -76,6 +79,7 @@ export function App() {
     void client.invalidateQueries({ queryKey: ["photo"] });
     void client.invalidateQueries({ queryKey: ["related"] });
     void client.invalidateQueries({ queryKey: ["highlights"] });
+    void client.invalidateQueries({ queryKey: ["taste"] });
   };
   const change = useMutation({
     mutationFn: ({

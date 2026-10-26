@@ -59,3 +59,7 @@ uncertain sequences receive Review; remaining photos receive Low Priority. Nothi
 Final selection = manual Keep, or automatic Pick when the manual state is Auto. Manual Reject and
 Review exclude from the final shortlist. Ratings are independent. Budget/weight updates never change
 manual decisions or ratings. AI recommendations can be viewed before overrides on the Selected page.
+
+The optional [local taste profile](preferences.md) blends 30% affinity with the generic curation and
+Highlights scores when explicitly enabled. It uses separate human Like/Dislike labels, a deterministic
+group holdout and a basic eligibility gate. No personal-quality improvement is claimed without real labels.

@@ -2,6 +2,45 @@
   flex-shrink: 0;
   border-radius: 7px;
 }
+.sidebar {
+  overflow-y: auto;
+}
+.sidebar nav,
+.sidebar-bottom,
+.brand {
+  flex-shrink: 0;
+}
+.sidebar-collections {
+  min-height: 85px;
+}
+@media (min-width: 651px) and (max-height: 800px) {
+  .sidebar {
+    padding-top: 22px;
+  }
+  .brand {
+    padding-bottom: 23px;
+  }
+  .sidebar nav {
+    gap: 2px;
+  }
+  .sidebar nav > button {
+    min-height: 38px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .sidebar-collections {
+    margin-top: 20px;
+  }
+  .sidebar-bottom {
+    padding-top: 18px;
+  }
+  .sidebar-bottom p {
+    margin-bottom: 12px;
+  }
+  .version {
+    display: none;
+  }
+}
 h1,
 h2,
 h3 {
@@ -170,6 +209,34 @@ h1 em {
   grid-column: 1 / -1;
 }
 @media (max-width: 650px) {
+  .page-heading.highlights-heading {
+    margin-bottom: 16px;
+  }
+  .highlights-legend {
+    display: none;
+  }
+  .highlights-tabs {
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .highlights-tabs > button {
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+  .highlight-disclaimer {
+    font-size: 9px;
+    margin: 9px 0 16px;
+  }
+  .highlight-section-title {
+    margin-top: 18px;
+  }
+  .highlight-section-title h2 {
+    font-size: 20px;
+  }
+  .collection-management button,
+  .taste-buttons button {
+    min-height: 38px;
+  }
   .collection-form {
     padding: 17px;
   }

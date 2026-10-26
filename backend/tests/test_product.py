@@ -201,9 +201,12 @@ def test_changed_source_invalidates_previously_trained_preferences(client, sourc
 
 def test_failed_cache_removal_does_not_remove_collection(client, source, monkeypatch):
     import framewise.api.collections as collections
+
     library_id, _ = create_scanned(source)
+
     def locked(_):
         raise PermissionError("preview is open")
+
     monkeypatch.setattr(collections.shutil, "rmtree", locked)
     name = client.get(f"/api/libraries/{library_id}").json()["name"]
     response = client.request("DELETE", f"/api/libraries/{library_id}", json={"confirm_name": name})

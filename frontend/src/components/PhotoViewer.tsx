@@ -94,8 +94,17 @@ export function PhotoViewer({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement) return;
-      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
-      if (event.key === " " && event.target instanceof HTMLElement && event.target.closest("button,a,summary")) return;
+      if (
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement
+      )
+        return;
+      if (
+        event.key === " " &&
+        event.target instanceof HTMLElement &&
+        event.target.closest("button,a,summary")
+      )
+        return;
       if (event.key === "Tab") {
         const focusable = panel.current?.querySelectorAll<HTMLElement>(
           'button:not(:disabled),a[href],[tabindex="0"]',
