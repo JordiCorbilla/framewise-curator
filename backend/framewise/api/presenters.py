@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import aliased
 
+from framewise.core.folders import display_path
 from framewise.db.models import (
     HighlightDecision,
     HighlightRanking,
@@ -16,7 +17,6 @@ from framewise.db.models import (
     SimilarityGroup,
     TasteProfile,
 )
-from framewise.imaging.acquisition import source_path
 
 
 def required(db, cls, object_id):
@@ -113,8 +113,8 @@ def serialize(row, source):
         "library_id": p.library_id,
         "filename": p.filename,
         "relative_path": p.relative_path,
-        "original_path": str(source_path(source, p.relative_path)),
-        "raw_original_path": str(source_path(source, raw.relative_path)) if raw else None,
+        "original_path": display_path(source, p.relative_path),
+        "raw_original_path": display_path(source, raw.relative_path) if raw else None,
         "raw_relative_path": raw.relative_path if raw else None,
         "raw_filename": raw.filename if raw else None,
         "status": p.status,

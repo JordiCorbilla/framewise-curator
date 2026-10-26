@@ -1,5 +1,7 @@
 # Current acceptance validation — 26 October 2026
 
+The subsequent Docker/folder-picker release is covered in [Docker 0.2 validation](docker-validation.md).
+
 This covers Highlights and the product/preference updates. The [original MVP report](validation.md)
 records the initial 381-NEF scan. Functional checks do not establish aesthetic accuracy or personal fit.
 
@@ -103,7 +105,8 @@ The normal collections were not used for test feedback.
 
 ## Intentionally deferred
 
-Safe XMP writing remains disabled; CSV does not create Lightroom Collections automatically. No cloud
+The later Docker edition adds an in-app folder picker and Windows launcher; its separate report supersedes
+the folder-picker setup limitation below. Safe XMP writing remains disabled; CSV does not create Lightroom Collections automatically. No cloud
 publishing or competition submission occurs. Native installer/folder picker, genre/theme judgement,
 advanced critique and sensor-level RAW inspection remain deferred. A measured 1,000–5,000-photo soak,
 other camera/NEF variants and independent personal-quality evaluation have not been completed.

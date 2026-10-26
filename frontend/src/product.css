@@ -2,6 +2,88 @@
   flex-shrink: 0;
   border-radius: 7px;
 }
+.source-folder-control {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.scan-form .source-folder-control input {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+.source-folder-control button {
+  height: auto;
+  flex-shrink: 0;
+}
+.folder-picker {
+  padding: 22px;
+  display: grid;
+  gap: 15px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.folder-navigation {
+  display: flex;
+  gap: 10px;
+}
+.folder-current {
+  color: #d2dfc8;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  background: #10140e;
+  border-radius: 5px;
+}
+.folder-picker > input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #c4d2b830;
+  border-radius: 4px;
+  background: #10140e;
+  color: #e0e8d9;
+  font: inherit;
+}
+.folder-list {
+  min-height: 120px;
+  max-height: 280px;
+  overflow: auto;
+  border-block: 1px solid #ffffff15;
+}
+.folder-list > button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  padding: 12px 9px;
+  border-bottom: 1px solid #ffffff08;
+  color: #ccd8c2;
+}
+.folder-list > button > span:first-of-type {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.folder-list > button > span:last-child {
+  margin-left: auto;
+}
+.folder-list > button:hover {
+  background: #c4d2b810;
+}
+.folder-list > p {
+  padding: 20px 10px;
+  color: #96a58a;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+@media (max-width: 650px) {
+  .source-folder-control {
+    flex-direction: column;
+  }
+  .folder-picker {
+    padding: 17px;
+  }
+}
 .sidebar {
   overflow-y: auto;
 }

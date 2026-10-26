@@ -16,8 +16,14 @@ def main():
     parser.add_argument("library_id")
     parser.add_argument("--output", type=Path, default=Path(".local/highlights"))
     parser.add_argument("--require-nef", action="store_true")
+    parser.add_argument("--base-url", default="http://127.0.0.1:8765")
+    parser.add_argument(
+        "--host-source",
+        type=Path,
+        help="Host source root when validating a Docker mount",
+    )
     args = parser.parse_args()
-    base = "http://127.0.0.1:8765/api"
+    base = args.base_url.rstrip("/") + "/api"
 
     def request(path, post=False):
         req = urllib.request.Request(
@@ -32,7 +38,7 @@ def main():
     highlights = json.loads(request(f"/libraries/{args.library_id}/highlights"))
     assert highlights["status"] == "ready", highlights
     output = args.output.resolve()
-    source = Path(library["source"]).resolve()
+    source = (args.host_source or Path(library["source"])).resolve()
     assert output != source and source not in output.parents, (
         "Write validation outside the source folder"
     )

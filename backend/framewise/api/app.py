@@ -13,7 +13,9 @@ from sqlalchemy.dialects.sqlite import insert
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from framewise.api.collections import router as collections_router
+from framewise.api.folders import router as folders_router
 from framewise.api.highlights import router as highlights_router
+from framewise.api.models import router as models_router
 from framewise.api.presenters import (
     job_info,
     library_info,
@@ -25,6 +27,7 @@ from framewise.api.presenters import (
 from framewise.api.schemas import BudgetUpdate, DecisionUpdate, LibraryCreate, WeightUpdate
 from framewise.api.taste import router as taste_router
 from framewise.core.config import DATA, DEFAULT_WEIGHTS, exiftool_path
+from framewise.core.folders import allowed_source, verify_mount_identity
 from framewise.curation.highlights import rebuild
 from framewise.curation.ranking import recommend
 from framewise.db.models import (
@@ -45,18 +48,20 @@ from framewise.imaging.acquisition import cache_paths, source_path
 from framewise.scoring.aesthetic import analyzer
 from framewise.workers.scan import ACTIVE, manager
 
-ORIGINS = [f"http://{host}:{port}" for host in ("localhost", "127.0.0.1") for port in (5173, 8765)]
+PORTS = {5173, 8765, int(os.environ.get("FRAMEWISE_PUBLIC_PORT", "8765"))}
+ORIGINS = [f"http://{host}:{port}" for host in ("localhost", "127.0.0.1") for port in PORTS]
 
 
 @asynccontextmanager
 async def lifespan(_):
+    verify_mount_identity(DATA)
     initialize()
     yield
     for stop in list(manager.cancel_events.values()):
         stop.set()
 
 
-app = FastAPI(title="Framewise", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Framewise", version="0.2.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 app.add_middleware(
     CORSMiddleware,
@@ -98,7 +103,10 @@ def libraries():
 
 @app.post("/api/libraries")
 def create_library(body: LibraryCreate):
-    source = Path(body.source).expanduser().resolve()
+    try:
+        source = allowed_source(body.source)
+    except ValueError as exc:
+        raise HTTPException(403, str(exc)) from exc
     if not source.is_dir():
         raise HTTPException(422, "Folder does not exist or is not accessible")
     # Cache must never become part of the input collection.
@@ -315,7 +323,9 @@ def weights(library_id: str, body: WeightUpdate):
 
 @app.get("/api/models")
 def models():
-    return analyzer.status()
+    from framewise.workers.models import installer
+
+    return {**analyzer.status(), "download": dict(installer.state)}
 
 
 @app.get("/api/libraries/{library_id}/export/{filename}")
@@ -391,6 +401,8 @@ def xmp_confirm(library_id: str):
 
 app.include_router(highlights_router)
 app.include_router(collections_router)
+app.include_router(folders_router)
+app.include_router(models_router)
 app.include_router(taste_router)
 
 frontend = Path(__file__).resolve().parents[3] / "frontend" / "dist"

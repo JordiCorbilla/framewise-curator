@@ -155,6 +155,7 @@ export interface Photos {
   limit: number;
 }
 export interface ModelStatus {
+  download?: { status: string; message: string | null };
   status: string;
   installed: boolean;
   dependencies: boolean;
