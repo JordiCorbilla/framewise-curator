@@ -220,7 +220,7 @@ export function App() {
                 ? "Loading aesthetic model…"
                 : "Classical analysis available"}
           </div>
-          <span className="version">FRAMEWISE / 0.1</span>
+          <span className="version">FRAMEWISE / 0.2</span>
         </div>
       </aside>
       <div className="workspace">

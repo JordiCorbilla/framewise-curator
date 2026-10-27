@@ -1,12 +1,12 @@
 [project]
 name = "framewise"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local, read-only photography curation"
 requires-python = ">=3.11"
 dependencies = ["fastapi==0.119.1", "uvicorn==0.38.0", "sqlalchemy==2.0.44", "pydantic==2.12.3", "pillow==12.0.0", "numpy==2.2.6", "opencv-python-headless==4.12.0.88", "imagehash==4.3.2", "platformdirs==4.5.0"]
 
 [project.optional-dependencies]
-ai = ["torch==2.9.0", "torchvision==0.24.0", "open-clip-torch==3.2.0"]
+ai = ["torch==2.9.0+cpu; sys_platform == 'linux' or sys_platform == 'win32'", "torch==2.9.0; sys_platform == 'darwin'", "torchvision==0.24.0+cpu; sys_platform == 'linux' or sys_platform == 'win32'", "torchvision==0.24.0; sys_platform == 'darwin'", "open-clip-torch==3.2.0"]
 raw = ["rawpy==0.25.1"]
 dev = ["pytest==8.4.2", "httpx==0.28.1", "ruff==0.14.2"]
 
@@ -22,3 +22,13 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Framewise is a CPU application; do not download CUDA libraries on Linux.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -114,6 +114,11 @@ self-hosted, and the browser connects to localhost. No telemetry or cloud infere
 
 ## Try it
 
+The Docker edition is designed to make setup simpler: extract the starter bundle, launch Framewise,
+choose a photo parent and browse trips with the in-app folder chooser. Python, Node, ExifTool and CPU
+libraries are inside the container. Docker Desktop is still required; model weights install only after
+explicit approval in Settings. Read-only mounts protect originals, while a persistent volume keeps decisions.
+
 The code and Windows setup instructions are in the [Framewise repository](https://github.com/JordiCorbilla/framewise-curator).
 Start with a small collection, inspect the recommendations, and use the budget controls to decide how
 much work you want to carry into the edit. Then give it examples of what you like and dislike.

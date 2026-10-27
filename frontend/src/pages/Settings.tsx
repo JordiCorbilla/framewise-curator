@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Aperture,
   Check,
@@ -23,6 +23,15 @@ export function Settings({
   onError: (s: string) => void;
   refresh: () => void;
 }) {
+  const client = useQueryClient();
+  const install = useMutation({
+    mutationFn: () =>
+      api("/models/install", "POST", { approve_download: true }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["model"] });
+    },
+    onError: (e) => onError(e.message),
+  });
   return (
     <>
       <div className="page-heading">
@@ -75,18 +84,45 @@ export function Settings({
           </dl>
           <div className="install-instructions">
             <strong>Install once, with your approval</strong>
-            <code>
-              cd backend
-              <br />
-              uv sync --extra ai --extra raw --extra dev
-              <br />
-              .\.venv\Scripts\python.exe ..\scripts\install_models.py
-              --approve-download
-            </code>
             <p className="footnote">
-              Downloads weights only when you run this explicit consent command.
-              Afterwards, resume a scan to fill missing aesthetic scores.
-              Runtime loading uses local paths only.
+              Download ~350 MB of model weights from OpenAI and LAION. No photos
+              are sent. Afterwards, scanning works offline.
+            </p>
+            {model?.download?.message && (
+              <p role="status">{model.download.message}</p>
+            )}
+            <Button
+              variant="outline"
+              disabled={
+                !model?.dependencies ||
+                model.installed ||
+                model.download?.status === "running" ||
+                install.isPending
+              }
+              onClick={() => install.mutate()}
+            >
+              {model?.download?.status === "running" || install.isPending ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : null}
+              {model?.installed
+                ? "Models installed"
+                : "Approve download & install AI (~350 MB)"}
+            </Button>
+            <details>
+              <summary>Manual installation alternative</summary>
+              <code>
+                cd backend
+                <br />
+                uv sync --extra ai --extra raw --extra dev
+                <br />
+                .\.venv\Scripts\python.exe ..\scripts\install_models.py
+                --approve-download
+              </code>
+            </details>
+            <p className="footnote">
+              Downloads weights only after your explicit approval. Afterwards,
+              resume a scan to fill missing aesthetic scores. Runtime loading
+              uses local paths only.
             </p>
           </div>
         </section>
@@ -110,8 +146,9 @@ export function Settings({
           </div>
           <p>
             SQLite, model manifests and per-collection previews live in your
-            Windows application-data folder. Your source folder is read-only to
-            Framewise. No telemetry, uploads or external inference services.
+            application-data folder (or Docker data volume). Your source folder
+            is read-only to Framewise. No telemetry, uploads or external
+            inference services.
           </p>
           <p className="footnote">
             Two preview workers · batches of eight · 48 thumbnails per gallery

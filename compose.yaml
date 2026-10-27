@@ -1,0 +1,34 @@
+name: framewise
+services:
+  framewise:
+    platform: linux/amd64
+    image: ${FRAMEWISE_IMAGE:-framewise:0.2.0}
+    build: .
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRAMEWISE_PORT:-8765}:8765"
+    environment:
+      FRAMEWISE_HOST_PHOTO_ROOT: ${FRAMEWISE_PHOTOS_PATH:?Run Start Framewise.cmd or set FRAMEWISE_PHOTOS_PATH to your photos folder}
+      FRAMEWISE_PUBLIC_PORT: ${FRAMEWISE_PORT:-8765}
+    volumes:
+      - type: bind
+        source: ${FRAMEWISE_PHOTOS_PATH:?Choose a photos folder}
+        target: /photos
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: framewise-data
+        target: /data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+volumes:
+  framewise-data:
+    name: framewise-${FRAMEWISE_WORKSPACE_ID:-local}-data

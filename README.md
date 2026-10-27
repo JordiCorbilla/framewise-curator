@@ -8,9 +8,25 @@ Turn a folder of photographs into an editing shortlist, inspect portfolio candid
 Competition Top 3. Keep the final decision. Originals stay untouched; inference and preference learning
 run on your own machine.
 
-[Get started](#start-on-windows) · [Personalise your shortlist](docs/preferences.md) ·
+[Get started](#run-with-docker) · [Personalise your shortlist](docs/preferences.md) ·
 [Highlights guide](docs/highlights.md) · [Validation](docs/highlights-validation.md) ·
 [Launch article](docs/blog/framewise.md)
+
+[Docker 0.2 validation](docs/docker-validation.md): 62 tests, a full 403-image CPU scan, read-only mounts,
+host-path exports, restart persistence and a 2.7-second cached rescan on the validation workstation.
+
+## Run with Docker
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), extract the Docker bundle and
+double-click **Start Framewise.cmd**. Choose your photo parent in the Windows dialog. The launcher loads
+the prebuilt image (or builds from source), waits for readiness and opens the app. No host Python, Node,
+ExifTool or CUDA setup. **Stop Framewise.cmd** stops it while preserving selections.
+
+In **Scan → Choose folder**, browse the read-only photo mount and click **Use this folder**. For AI,
+use **Settings → Approve download & install AI (~350 MB)** once. Prebuilt bundles target Linux/amd64
+and require Docker; they are not standalone native executables. [Docker setup and packaging guide](docs/docker.md).
+
+![Choose a collection inside the read-only Docker photo mount](docs/images/folder-picker.png)
 
 ![Highlights workspace with three ranked finalists and alternatives](docs/images/highlights.png)
 
@@ -23,7 +39,7 @@ are not evidence of photographic ranking accuracy.*
 | Workspace | What you can do |
 | --- | --- |
 | **Library** | Create, reopen, rename and permanently remove collections. Removal clears app records and previews after typed confirmation; source folders stay untouched. |
-| **Scan** | Enter a folder path, discover NEF/JPEG/PNG files recursively, watch real progress, pause and resume. |
+| **Scan** | Choose a folder with the folder browser, discover NEF/JPEG/PNG files recursively, watch real progress, pause and resume. |
 | **Curate** | Inspect measurements and related frames, keep/exclude/rate, and choose a 5%, 10%, 25% or custom selection budget. |
 | **Selected** | Review final Lightroom Picks, including your manual overrides. |
 | **Highlights** | Review Flickr Standouts and a separate Competition Top 3; compare, replace/promote finalists and inspect alternatives. |
@@ -62,7 +78,7 @@ independent evaluation trips. [Algorithm, limits and data controls](docs/prefere
 
 ![Preference settings before enough explicit feedback has been collected](docs/images/preferences.png)
 
-## Start on Windows
+## Native Windows setup (alternative)
 
 Requires Python **3.11+**, Node **22.12+**, [uv](https://docs.astral.sh/uv/) and
 [ExifTool](https://exiftool.org/). CPU inference needs no CUDA or NVIDIA GPU.
@@ -88,7 +104,7 @@ are bundled locally. Bind this single-user app to localhost; do not expose it pu
 
 ### Your first Nikon scan
 
-1. Open **Scan**, enter a folder such as `C:\Photos\My trip`, and choose whether to include subfolders.
+1. Open **Scan → Choose folder**, navigate to your photographs and click **Use this folder**. Manual paths remain optional. Choose whether to include subfolders.
 2. Start the scan. Previews appear in batches while indexing and scoring progress updates.
 3. Review **Curate**. Open an image; **P** keeps, **X** excludes, **U** resets, **1–5** rates,
    arrow keys navigate the current page, and **Esc** closes the viewer.
@@ -153,7 +169,7 @@ the original eight-image demo. Use a separate data directory for public screensh
 [Image provenance and capture setup](docs/images/README.md). The [blog article](docs/blog/framewise.md)
 is a local publication-ready draft; nothing has been published automatically.
 
-Deferred: XMP writes, native installer/folder picker, advanced critiques, genre/theme judging,
+Deferred: XMP writes, standalone native installer, advanced critiques, genre/theme judging,
 sensor-level RAW inspection and large-library performance qualification. The preference learner is experimental.
 
 UI inspiration: [Facet](https://github.com/ncoevoet/facet), [Selects](https://github.com/bihanikeshav/selects).

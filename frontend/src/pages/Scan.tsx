@@ -13,6 +13,7 @@ import {
 import type { Library } from "../types";
 import { Button } from "../components/ui/button";
 import { api } from "../services/api";
+import { FolderPicker } from "../components/FolderPicker";
 export function ScanForm({
   onCreated,
   onError,
@@ -22,7 +23,8 @@ export function ScanForm({
   onError: (message: string) => void;
   scanning: boolean;
 }) {
-  const [source, setSource] = useState("C:\\Desk\\2026-10-18 Fotos NY");
+  const [source, setSource] = useState("");
+  const [choosing, setChoosing] = useState(false);
   const [name, setName] = useState("");
   const [recursive, setRecursive] = useState(true);
   const create = useMutation({
@@ -53,20 +55,30 @@ export function ScanForm({
           </div>
           <h2>Where are your photographs?</h2>
           <p>
-            Enter a local folder path. Framewise reads your files and stores
+            Choose a photographs folder. Framewise reads your files and stores
             previews in its own private cache.
           </p>
           <label htmlFor="folder-path">Source folder</label>
-          <input
-            id="folder-path"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            required
-            placeholder="C:\\Pictures\\My trip"
-          />
+          <div className="source-folder-control">
+            <input
+              id="folder-path"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              required
+              placeholder="Choose a folder or enter its path"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setChoosing(true)}
+            >
+              <FolderOpen size={16} />
+              Choose folder
+            </Button>
+          </div>
           <p className="field-hint">
-            Paste a path from File Explorer. Native folder selection is
-            unavailable in this browser.
+            Browse folders without uploading photographs. Docker shows only your
+            shared photo location.
           </p>
           <label htmlFor="collection-name">
             Collection name <span>(optional)</span>
@@ -86,7 +98,10 @@ export function ScanForm({
             />
             Include subfolders
           </label>
-          <Button type="submit" disabled={create.isPending || scanning}>
+          <Button
+            type="submit"
+            disabled={create.isPending || scanning || !source.trim()}
+          >
             {create.isPending || scanning ? (
               <Loader2 className="animate-spin" size={16} />
             ) : (
@@ -135,6 +150,15 @@ export function ScanForm({
           </p>
         </aside>
       </div>
+      {choosing && (
+        <FolderPicker
+          close={() => setChoosing(false)}
+          choose={(path) => {
+            setSource(path);
+            setChoosing(false);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -9,6 +9,7 @@ PROCEDURAL ILLUSTRATION**. No user photographs, NEFs, private source paths, weig
 - `compare.png`: side-by-side demo frames and actual feature measurements.
 - `preferences.png`: cold-start controls; no invented personal validation score.
 - `library.png`: collection management and Framewise identity.
+- `folder-picker.png`: Docker 0.2 folder browsing inside the read-only mount, using owned demo folders.
 
 The isolated workspace used installed model files with real CPU inference. Configuration: 12 JPEGs,
 25% editing budget, competition aesthetic/technical floors **0**, Flickr floor **0**, percentile **50**,

@@ -34,6 +34,10 @@ class ScanManager:
 
     def start(self, library_id):
         with self.lock, Session.begin() as db:
+            from framewise.workers.models import installer
+
+            if installer.state["status"] == "running":
+                raise ValueError("Wait for model installation to finish before starting a scan.")
             if db.query(ScanJob).filter(ScanJob.status.in_(ACTIVE)).first():
                 raise ValueError("A scan is already active. Cancel it or wait for completion.")
             analyzer.retry_failed()
